@@ -3,6 +3,15 @@ Simple tool to convert 1 bit per pixel BMP files to TI-99/4A BASIC programs. Not
 
 The benefit of the simple implementation is that code has no dependencies to python frameworks, it is plain vanilla python3.
 
+The program transforms a picture like this:
+
+![grommy2a_config](https://github.com/Speccery/1bpp2basic/assets/18168418/2ab06a5c-b370-4058-82b5-58e0de39696a)
+
+via some steps into a basic program which draws this as captures from the output of the js99er.net emulator:
+
+![Basic program output in js99er.net emulator](https://github.com/Speccery/1bpp2basic/assets/18168418/752cab1f-cd05-4ba3-8aaa-9fd6e045ef45)
+
+
 ## Purpose and "architecture"
 I am no graphics designer, but still it is much faster for me to use graphics program to design graphics rather than writing character defitions in hex, the old fashioned way.
 
@@ -15,7 +24,7 @@ The code checks if this matches one of the existing characters. If not, define a
 Note: no check is made against any upper boundary... Meaning the code will happily
 allocate more user defined characters than actually available in TI Basic.
 
-### The output BASIC program
+### The resulting BASIC program
 The Basic program has two kinds of entries of interest.
 
 1. Character defintions such as `1030 CALL CHAR(97, "000000030F1F3F3F")` define the character code - in this case 97 - to have a certain shape based on the input picture. The code defines as many characters as needed to describe the graphics. This can easily overflow the codes available in TI BASIC, where the last valid code is 159.
@@ -29,6 +38,7 @@ The definition is done so that the very first characted defined (i.e. in top lef
 Note that there is an offset, in this case 50, which is used to map character codes into characters in the string A$. The way the program is set up is that it defines the characters starting from the character code 96. 
 However, when creating the strings, 50 is substracted so that the A$ strings going to the subroutine contain "easy" to enter characters.
 The subroutine adds back the offset. You can change this behaviour by modifying the code.
+
 
 ## The workflow
 ### Steps
