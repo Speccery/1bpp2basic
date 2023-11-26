@@ -1,0 +1,80 @@
+* config.gpl
+* Configurator for GROMMY2
+* At this point this is just a demo how to render the generated screen.gpl
+* EP 2023-11-26
+*
+* Compile the GPL code to binary with:
+* xga99.py --aorg 0x6000 config.gpl -L config.lst -o config.bin
+* output file is config.bin, since the filename ends with g it is treated
+* by an emulator such as js99er.net as a GROM file.
+*
+* This file includes the screen.gpl file at the very end.
+*
+
+G6000  DATA >AA01             standard header  version 1
+       DATA >0000             # of programs 0
+       DATA >0000             no power up
+       DATA G6010             program
+       DATA >0000             DSRs
+       DATA >0000             subprograms
+       DATA >0000
+       DATA >0000
+
+G6010  DATA >0000         * No next program
+       DATA GPROG
+       STRI 'GROMMY2 CONFIG'
+
+GVREGS 
+    BYTE  >E0              VDP registers values: standard mode
+    BYTE  >00              screen image at >0000
+    BYTE  >0E              color table at >0380
+    BYTE  >01              char patterns at >0800
+    BYTE  >06              sprite attributes at >0300
+    BYTE  >00              sprite patterns at >0000
+    BYTE  >F5              text/screen colors: white / light blue                
+
+GPROG  
+    CLR   @>8374
+    DST   >0900,@>834A     load upper case chars 32->
+    CALL  G@>0018
+* Setup roughly as with mini memory          
+    MOVE >0007,G@GVREGS,#>01    Set VDP Regs
+    CLR   V@>0800          clear charpats 0-31
+    MOVE  >00FF,V@>0800,V@>0801
+
+    ST    >7E,@>8373       init subroutine stack
+    DCLR  @>8322           clear error code
+    DCLR  @>8348           clear flags      
+
+    CALL G@GVDPSETUP  
+
+    CALL G@G_SCR1       ; Setup the screen which was automatically generated
+* Use the FMT token to add some strings on the screen    
+    FMT
+    COL >00
+    ROW >07
+    HTEX 'TEST STRING'
+    ROW+ >01
+    COL >00
+    HTEX 'STRING2'
+    FEND
+GWAIT
+    SCAN
+    BR    G@GWAIT          wait for the user to press a key
+    CEQ   >0F,@>8375       is it Fctn-9?
+*       BR    G@G60F5          no
+    EXIT                   yes: reset the TI-99/4A
+
+
+*----------------------------------------
+* VDP setup for module
+*----------------------------------------
+GVDPSETUP  
+    ST    >D0,V@>0300      no sprites
+    ST    >F5,V@>0380      init color table as white on blue for all chars
+    MOVE  >001F,V@>0380,V@>0381
+    ALL   >20              erase screen
+    BACK  >F5              screen colors: white on light blue
+    RTN
+
+    COPY 'screen.gpl'

@@ -1,0 +1,795 @@
+XGA99 CROSS-ASSEMBLER   VERSION 3.0.1
+              > config.gpl
+0001          * config.gpl
+0002          * Configurator for GROMMY2
+0003          * At this point this is just a demo how to render the generated screen.gpl
+0004          * EP 2023-11-26
+0005          *
+0006          * Compile the GPL code to binary with:
+0007          * xga99.py --aorg 0x6000 config.gpl -L config.lst -o config.bin
+0008          * output file is config.bin, since the filename ends with g it is treated
+0009          * by an emulator such as js99er.net as a GROM file.
+0010          *
+0011          * This file includes the screen.gpl file at the very end.
+0012          *
+0013          
+0014 6000 AA  G6000  DATA >AA01             standard header  version 1
+     6001 01
+0015 6002 00         DATA >0000             # of programs 0
+     6003 00
+0016 6004 00         DATA >0000             no power up
+     6005 00
+0017 6006 60         DATA G6010             program
+     6007 10
+0018 6008 00         DATA >0000             DSRs
+     6009 00
+0019 600A 00         DATA >0000             subprograms
+     600B 00
+0020 600C 00         DATA >0000
+     600D 00
+0021 600E 00         DATA >0000
+     600F 00
+0022          
+0023 6010 00  G6010  DATA >0000         * No next program
+     6011 00
+0024 6012 60         DATA GPROG
+     6013 2A
+0025 6014 0E         STRI 'GROMMY2 CONFIG'
+     6015 47  
+     6016 52  
+     6017 4F  
+     6018 4D  
+     6019 4D  
+     601A 59  
+     601B 32  
+     601C 20  
+     601D 43  
+     601E 4F  
+     601F 4E  
+     6020 46  
+     6021 49  
+     6022 47  
+0026          
+0027          GVREGS
+0028 6023 E0      BYTE  >E0              VDP registers values: standard mode
+0029 6024 00      BYTE  >00              screen image at >0000
+0030 6025 0E      BYTE  >0E              color table at >0380
+0031 6026 01      BYTE  >01              char patterns at >0800
+0032 6027 06      BYTE  >06              sprite attributes at >0300
+0033 6028 00      BYTE  >00              sprite patterns at >0000
+0034 6029 F5      BYTE  >F5              text/screen colors: white / light blue
+0035          
+0036          GPROG
+0037 602A 86      CLR   @>8374
+     602B 74  
+0038 602C BF      DST   >0900,@>834A     load upper case chars 32->
+     602D 4A  
+     602E 09  
+     602F 00
+0039 6030 06      CALL  G@>0018
+     6031 00  
+     6032 18
+0040          * Setup roughly as with mini memory
+0041 6033 39      MOVE >0007,G@GVREGS,#>01    Set VDP Regs
+     6034 00  
+     6035 07
+     6036 01  
+     6037 60  
+     6038 23
+0042 6039 86      CLR   V@>0800          clear charpats 0-31
+     603A A8  
+     603B 00
+0043 603C 35      MOVE  >00FF,V@>0800,V@>0801
+     603D 00  
+     603E FF
+     603F A8  
+     6040 01
+     6041 A8  
+     6042 00
+0044          
+0045 6043 BE      ST    >7E,@>8373       init subroutine stack
+     6044 73  
+     6045 7E  
+0046 6046 87      DCLR  @>8322           clear error code
+     6047 22  
+0047 6048 87      DCLR  @>8348           clear flags
+     6049 48  
+0048          
+0049 604A 06      CALL G@GVDPSETUP
+     604B 60  
+     604C 74
+0050          
+0051 604D 06      CALL G@G_SCR1       ; Setup the screen which was automatically generated
+     604E 62  
+     604F B8
+0052          * Use the FMT token to add some strings on the screen
+0053 6050 08      FMT
+0054 6051 FF      COL >00
+     6052 00  
+0055 6053 FE      ROW >07
+     6054 07  
+0056 6055 0A      HTEX 'TEST STRING'
+     6056 54  
+     6057 45  
+     6058 53  
+     6059 54  
+     605A 20  
+     605B 53  
+     605C 54  
+     605D 52  
+     605E 49  
+     605F 4E  
+     6060 47  
+0057 6061 A0      ROW+ >01
+0058 6062 FF      COL >00
+     6063 00  
+0059 6064 06      HTEX 'STRING2'
+     6065 53  
+     6066 54  
+     6067 52  
+     6068 49  
+     6069 4E  
+     606A 47  
+     606B 32  
+0060 606C FB      FEND
+0061          GWAIT
+0062 606D 03      SCAN
+0063 606E 40      BR    G@GWAIT          wait for the user to press a key
+     606F 6D  
+0064 6070 D6      CEQ   >0F,@>8375       is it Fctn-9?
+     6071 75  
+     6072 0F  
+0065          *       BR    G@G60F5          no
+0066 6073 0B      EXIT                   yes: reset the TI-99/4A
+0067          
+0068          
+0069          *----------------------------------------
+0070          * VDP setup for module
+0071          *----------------------------------------
+0072          GVDPSETUP
+0073 6074 BE      ST    >D0,V@>0300      no sprites
+     6075 A3  
+     6076 00
+     6077 D0  
+0074 6078 BE      ST    >F5,V@>0380      init color table as white on blue for all chars
+     6079 A3  
+     607A 80
+     607B F5  
+0075 607C 35      MOVE  >001F,V@>0380,V@>0381
+     607D 00  
+     607E 1F
+     607F A3  
+     6080 81
+     6081 A3  
+     6082 80
+0076 6083 07      ALL   >20              erase screen
+     6084 20  
+0077 6085 04      BACK  >F5              screen colors: white on light blue
+     6086 F5  
+0078 6087 00      RTN
+0079          
+0080              COPY 'screen.gpl'
+              > screen.gpl
+0001          * Character definitions
+0002 6088 00  GUDG96	BYTE >00,>00,>00,>00,>00,>00,>00,>00 ; Character 96
+     6089 00  
+     608A 00  
+     608B 00  
+     608C 00  
+     608D 00  
+     608E 00  
+     608F 00  
+0003 6090 00  GUDG97	BYTE >00,>00,>00,>03,>0F,>1F,>3F,>3F ; Character 97
+     6091 00  
+     6092 00  
+     6093 03  
+     6094 0F  
+     6095 1F  
+     6096 3F  
+     6097 3F  
+0004 6098 00  GUDG98	BYTE >00,>00,>00,>F0,>FC,>FE,>FF,>FF ; Character 98
+     6099 00  
+     609A 00  
+     609B F0  
+     609C FC  
+     609D FE  
+     609E FF  
+     609F FF  
+0005 60A0 00  GUDG99	BYTE >00,>00,>00,>00,>00,>00,>00,>80 ; Character 99
+     60A1 00  
+     60A2 00  
+     60A3 00  
+     60A4 00  
+     60A5 00  
+     60A6 00  
+     60A7 80  
+0006 60A8 1C  GUDG100	BYTE >1C,>3F,>7F,>FF,>FF,>FE,>FE,>FE ; Character 100
+     60A9 3F  
+     60AA 7F  
+     60AB FF  
+     60AC FF  
+     60AD FE  
+     60AE FE  
+     60AF FE  
+0007 60B0 00  GUDG101	BYTE >00,>3F,>FF,>FF,>FF,>7F,>7F,>7F ; Character 101
+     60B1 3F  
+     60B2 FF  
+     60B3 FF  
+     60B4 FF  
+     60B5 7F  
+     60B6 7F  
+     60B7 7F  
+0008 60B8 00  GUDG102	BYTE >00,>3F,>3F,>3F,>3F,>3F,>3F,>3F ; Character 102
+     60B9 3F  
+     60BA 3F  
+     60BB 3F  
+     60BC 3F  
+     60BD 3F  
+     60BE 3F  
+     60BF 3F  
+0009 60C0 00  GUDG103	BYTE >00,>9C,>BC,>FC,>FC,>FD,>FD,>FD ; Character 103
+     60C1 9C  
+     60C2 BC  
+     60C3 FC  
+     60C4 FC  
+     60C5 FD  
+     60C6 FD  
+     60C7 FD  
+0010 60C8 07  GUDG104	BYTE >07,>3F,>7F,>FF,>FF,>FC,>FC,>FC ; Character 104
+     60C9 3F  
+     60CA 7F  
+     60CB FF  
+     60CC FF  
+     60CD FC  
+     60CE FC  
+     60CF FC  
+0011 60D0 00  GUDG105	BYTE >00,>F0,>F8,>FC,>FE,>FE,>FE,>FE ; Character 105
+     60D1 F0  
+     60D2 F8  
+     60D3 FC  
+     60D4 FE  
+     60D5 FE  
+     60D6 FE  
+     60D7 FE  
+0012 60D8 06  GUDG106	BYTE >06,>9F,>FF,>FF,>FF,>9F,>9F,>9F ; Character 106
+     60D9 9F  
+     60DA FF  
+     60DB FF  
+     60DC FF  
+     60DD 9F  
+     60DE 9F  
+     60DF 9F  
+0013 60E0 03  GUDG107	BYTE >03,>8F,>DF,>FF,>FF,>E7,>C7,>C7 ; Character 107
+     60E1 8F  
+     60E2 DF  
+     60E3 FF  
+     60E4 FF  
+     60E5 E7  
+     60E6 C7  
+     60E7 C7  
+0014 60E8 00  GUDG108	BYTE >00,>C7,>E7,>E7,>E7,>F7,>F7,>F7 ; Character 108
+     60E9 C7  
+     60EA E7  
+     60EB E7  
+     60EC E7  
+     60ED F7  
+     60EE F7  
+     60EF F7  
+0015 60F0 00  GUDG109	BYTE >00,>F3,>FF,>FF,>FF,>F3,>F3,>F3 ; Character 109
+     60F1 F3  
+     60F2 FF  
+     60F3 FF  
+     60F4 FF  
+     60F5 F3  
+     60F6 F3  
+     60F7 F3  
+0016 60F8 C0  GUDG110	BYTE >C0,>F1,>FB,>FF,>FF,>FC,>F8,>F8 ; Character 110
+     60F9 F1  
+     60FA FB  
+     60FB FF  
+     60FC FF  
+     60FD FC  
+     60FE F8  
+     60FF F8  
+0017 6100 60  GUDG111	BYTE >60,>F8,>FC,>FC,>FC,>FE,>FE,>FE ; Character 111
+     6101 F8  
+     6102 FC  
+     6103 FC  
+     6104 FC  
+     6105 FE  
+     6106 FE  
+     6107 FE  
+0018 6108 00  GUDG112	BYTE >00,>FC,>FE,>FE,>7E,>7E,>7E,>7E ; Character 112
+     6109 FC  
+     610A FE  
+     610B FE  
+     610C 7E  
+     610D 7E  
+     610E 7E  
+     610F 7E  
+0019 6110 00  GUDG113	BYTE >00,>3F,>3F,>7F,>7F,>7F,>7E,>7E ; Character 113
+     6111 3F  
+     6112 3F  
+     6113 7F  
+     6114 7F  
+     6115 7F  
+     6116 7E  
+     6117 7E  
+0020 6118 7F  GUDG114	BYTE >7F,>7E,>7E,>7E,>7E,>00,>00,>00 ; Character 114
+     6119 7E  
+     611A 7E  
+     611B 7E  
+     611C 7E  
+     611D 00  
+     611E 00  
+     611F 00  
+0021 6120 3F  GUDG115	BYTE >3F,>3F,>3F,>3F,>3F,>7F,>7F,>FF ; Character 115
+     6121 3F  
+     6122 3F  
+     6123 3F  
+     6124 3F  
+     6125 7F  
+     6126 7F  
+     6127 FF  
+0022 6128 80  GUDG116	BYTE >80,>80,>80,>80,>80,>80,>00,>00 ; Character 116
+     6129 80  
+     612A 80  
+     612B 80  
+     612C 80  
+     612D 80  
+     612E 00  
+     612F 00  
+0023 6130 FE  GUDG117	BYTE >FE,>FE,>FE,>FE,>FE,>FE,>FE,>FE ; Character 117
+     6131 FE  
+     6132 FE  
+     6133 FE  
+     6134 FE  
+     6135 FE  
+     6136 FE  
+     6137 FE  
+0024 6138 7F  GUDG118	BYTE >7F,>7F,>7F,>7F,>7F,>7F,>7F,>7F ; Character 118
+     6139 7F  
+     613A 7F  
+     613B 7F  
+     613C 7F  
+     613D 7F  
+     613E 7F  
+     613F 7F  
+0025 6140 3F  GUDG119	BYTE >3F,>3F,>3F,>3F,>3F,>3F,>3F,>3F ; Character 119
+     6141 3F  
+     6142 3F  
+     6143 3F  
+     6144 3F  
+     6145 3F  
+     6146 3F  
+     6147 3F  
+0026 6148 F9  GUDG120	BYTE >F9,>C1,>C1,>81,>81,>81,>81,>81 ; Character 120
+     6149 C1  
+     614A C1  
+     614B 81  
+     614C 81  
+     614D 81  
+     614E 81  
+     614F 81  
+0027 6150 FC  GUDG121	BYTE >FC,>FC,>FC,>FC,>FC,>FC,>FC,>FC ; Character 121
+     6151 FC  
+     6152 FC  
+     6153 FC  
+     6154 FC  
+     6155 FC  
+     6156 FC  
+     6157 FC  
+0028 6158 9F  GUDG122	BYTE >9F,>9F,>9F,>9F,>9F,>9F,>9F,>9F ; Character 122
+     6159 9F  
+     615A 9F  
+     615B 9F  
+     615C 9F  
+     615D 9F  
+     615E 9F  
+     615F 9F  
+0029 6160 C7  GUDG123	BYTE >C7,>C7,>C7,>C7,>C7,>C7,>C7,>C7 ; Character 123
+     6161 C7  
+     6162 C7  
+     6163 C7  
+     6164 C7  
+     6165 C7  
+     6166 C7  
+     6167 C7  
+0030 6168 F7  GUDG124	BYTE >F7,>F7,>F7,>F7,>F7,>F7,>F7,>F7 ; Character 124
+     6169 F7  
+     616A F7  
+     616B F7  
+     616C F7  
+     616D F7  
+     616E F7  
+     616F F7  
+0031 6170 F3  GUDG125	BYTE >F3,>F3,>F3,>F3,>F3,>F3,>F3,>F3 ; Character 125
+     6171 F3  
+     6172 F3  
+     6173 F3  
+     6174 F3  
+     6175 F3  
+     6176 F3  
+     6177 F3  
+0032 6178 F8  GUDG126	BYTE >F8,>F8,>F8,>F8,>F8,>F8,>F8,>F8 ; Character 126
+     6179 F8  
+     617A F8  
+     617B F8  
+     617C F8  
+     617D F8  
+     617E F8  
+     617F F8  
+0033 6180 7E  GUDG127	BYTE >7E,>3F,>3F,>3F,>3F,>3F,>1F,>1F ; Character 127
+     6181 3F  
+     6182 3F  
+     6183 3F  
+     6184 3F  
+     6185 3F  
+     6186 1F  
+     6187 1F  
+0034 6188 7E  GUDG128	BYTE >7E,>7E,>7E,>7E,>7E,>7E,>FC,>FC ; Character 128
+     6189 7E  
+     618A 7E  
+     618B 7E  
+     618C 7E  
+     618D 7E  
+     618E FC  
+     618F FC  
+0035 6190 00  GUDG129	BYTE >00,>01,>01,>03,>07,>07,>0F,>0F ; Character 129
+     6191 01  
+     6192 01  
+     6193 03  
+     6194 07  
+     6195 07  
+     6196 0F  
+     6197 0F  
+0036 6198 FF  GUDG130	BYTE >FF,>FE,>FC,>FC,>F8,>F8,>F0,>E0 ; Character 130
+     6199 FE  
+     619A FC  
+     619B FC  
+     619C F8  
+     619D F8  
+     619E F0  
+     619F E0  
+0037 61A0 FE  GUDG131	BYTE >FE,>FF,>7F,>7F,>3F,>00,>FE,>FE ; Character 131
+     61A1 FF  
+     61A2 7F  
+     61A3 7F  
+     61A4 3F  
+     61A5 00  
+     61A6 FE  
+     61A7 FE  
+0038 61A8 7F  GUDG132	BYTE >7F,>FF,>FF,>FF,>7F,>7F,>7F,>7F ; Character 132
+     61A9 FF  
+     61AA FF  
+     61AB FF  
+     61AC 7F  
+     61AD 7F  
+     61AE 7F  
+     61AF 7F  
+0039 61B0 81  GUDG133	BYTE >81,>81,>81,>81,>80,>80,>80,>80 ; Character 133
+     61B1 81  
+     61B2 81  
+     61B3 81  
+     61B4 80  
+     61B5 80  
+     61B6 80  
+     61B7 80  
+0040 61B8 FC  GUDG134	BYTE >FC,>FC,>FC,>FC,>FF,>FF,>7F,>1F ; Character 134
+     61B9 FC  
+     61BA FC  
+     61BB FC  
+     61BC FF  
+     61BD FF  
+     61BE 7F  
+     61BF 1F  
+0041 61C0 FE  GUDG135	BYTE >FE,>FE,>FE,>FE,>FC,>FC,>F8,>E0 ; Character 135
+     61C1 FE  
+     61C2 FE  
+     61C3 FE  
+     61C4 FC  
+     61C5 FC  
+     61C6 F8  
+     61C7 E0  
+0042 61C8 1F  GUDG136	BYTE >1F,>1F,>1F,>0F,>0F,>0F,>0F,>1F ; Character 136
+     61C9 1F  
+     61CA 1F  
+     61CB 0F  
+     61CC 0F  
+     61CD 0F  
+     61CE 0F  
+     61CF 1F  
+0043 61D0 FC  GUDG137	BYTE >FC,>FC,>FC,>FC,>FC,>FC,>F8,>F8 ; Character 137
+     61D1 FC  
+     61D2 FC  
+     61D3 FC  
+     61D4 FC  
+     61D5 FC  
+     61D6 F8  
+     61D7 F8  
+0044 61D8 1F  GUDG138	BYTE >1F,>3F,>3F,>7F,>7F,>7F,>7F,>7F ; Character 138
+     61D9 3F  
+     61DA 3F  
+     61DB 7F  
+     61DC 7F  
+     61DD 7F  
+     61DE 7F  
+     61DF 7F  
+0045 61E0 E0  GUDG139	BYTE >E0,>C0,>80,>FF,>FF,>FF,>FF,>FF ; Character 139
+     61E1 C0  
+     61E2 80  
+     61E3 FF  
+     61E4 FF  
+     61E5 FF  
+     61E6 FF  
+     61E7 FF  
+0046 61E8 00  GUDG140	BYTE >00,>00,>00,>00,>80,>80,>80,>80 ; Character 140
+     61E9 00  
+     61EA 00  
+     61EB 00  
+     61EC 80  
+     61ED 80  
+     61EE 80  
+     61EF 80  
+0047 61F0 FF  GUDG141	BYTE >FF,>7F,>3F,>0F,>00,>00,>00,>00 ; Character 141
+     61F1 7F  
+     61F2 3F  
+     61F3 0F  
+     61F4 00  
+     61F5 00  
+     61F6 00  
+     61F7 00  
+0048 61F8 FF  GUDG142	BYTE >FF,>FE,>FC,>F0,>00,>00,>00,>00 ; Character 142
+     61F9 FE  
+     61FA FC  
+     61FB F0  
+     61FC 00  
+     61FD 00  
+     61FE 00  
+     61FF 00  
+0049 6200 3F  GUDG143	BYTE >3F,>3F,>3F,>00,>00,>00,>00,>00 ; Character 143
+     6201 3F  
+     6202 3F  
+     6203 00  
+     6204 00  
+     6205 00  
+     6206 00  
+     6207 00  
+0050 6208 F8  GUDG144	BYTE >F8,>F0,>E0,>00,>00,>00,>00,>00 ; Character 144
+     6209 F0  
+     620A E0  
+     620B 00  
+     620C 00  
+     620D 00  
+     620E 00  
+     620F 00  
+0051 6210 00  GUDG145	BYTE >00,>00,>00,>3E,>60,>60,>60,>60 ; Character 145
+     6211 00  
+     6212 00  
+     6213 3E  
+     6214 60  
+     6215 60  
+     6216 60  
+     6217 60  
+0052 6218 00  GUDG146	BYTE >00,>00,>00,>3E,>66,>43,>C3,>43 ; Character 146
+     6219 00  
+     621A 00  
+     621B 3E  
+     621C 66  
+     621D 43  
+     621E C3  
+     621F 43  
+0053 6220 00  GUDG147	BYTE >00,>00,>00,>63,>73,>7B,>6F,>6F ; Character 147
+     6221 00  
+     6222 00  
+     6223 63  
+     6224 73  
+     6225 7B  
+     6226 6F  
+     6227 6F  
+0054 6228 00  GUDG148	BYTE >00,>00,>00,>7C,>60,>60,>7C,>60 ; Character 148
+     6229 00  
+     622A 00  
+     622B 7C  
+     622C 60  
+     622D 60  
+     622E 7C  
+     622F 60  
+0055 6230 00  GUDG149	BYTE >00,>00,>00,>C7,>CC,>CC,>CC,>CC ; Character 149
+     6231 00  
+     6232 00  
+     6233 C7  
+     6234 CC  
+     6235 CC  
+     6236 CC  
+     6237 CC  
+0056 6238 00  GUDG150	BYTE >00,>00,>00,>C0,>00,>00,>C0,>E0 ; Character 150
+     6239 00  
+     623A 00  
+     623B C0  
+     623C 00  
+     623D 00  
+     623E C0  
+     623F E0  
+0057 6240 60  GUDG151	BYTE >60,>32,>1E,>00,>00,>00,>00,>00 ; Character 151
+     6241 32  
+     6242 1E  
+     6243 00  
+     6244 00  
+     6245 00  
+     6246 00  
+     6247 00  
+0058 6248 62  GUDG152	BYTE >62,>76,>3C,>00,>00,>00,>00,>00 ; Character 152
+     6249 76  
+     624A 3C  
+     624B 00  
+     624C 00  
+     624D 00  
+     624E 00  
+     624F 00  
+0059 6250 67  GUDG153	BYTE >67,>67,>63,>00,>00,>00,>00,>00 ; Character 153
+     6251 67  
+     6252 63  
+     6253 00  
+     6254 00  
+     6255 00  
+     6256 00  
+     6257 00  
+0060 6258 60  GUDG154	BYTE >60,>60,>60,>00,>00,>00,>00,>00 ; Character 154
+     6259 60  
+     625A 60  
+     625B 00  
+     625C 00  
+     625D 00  
+     625E 00  
+     625F 00  
+0061 6260 CC  GUDG155	BYTE >CC,>CE,>C7,>00,>00,>00,>00,>00 ; Character 155
+     6261 CE  
+     6262 C7  
+     6263 00  
+     6264 00  
+     6265 00  
+     6266 00  
+     6267 00  
+0062 6268 60  GUDG156	BYTE >60,>E0,>C0,>00,>00,>00,>00,>00 ; Character 156
+     6269 E0  
+     626A C0  
+     626B 00  
+     626C 00  
+     626D 00  
+     626E 00  
+     626F 00  
+0063 6270 61  GLINE1_25 BYTE >61,>62,>63
+     6271 62  
+     6272 63  
+0064 6273 64  GLINE2_25 BYTE >64,>65,>66,>67,>68,>69,>66,>6A,>6B,>6C,>6D,>6E,>6F,>70,>71,>72,>73,>74
+     6274 65  
+     6275 66  
+     6276 67  
+     6277 68  
+     6278 69  
+     6279 66  
+     627A 6A  
+     627B 6B  
+     627C 6C  
+     627D 6D  
+     627E 6E  
+     627F 6F  
+     6280 70  
+     6281 71  
+     6282 72  
+     6283 73  
+     6284 74  
+0065 6285 75  GLINE3_24 BYTE >75,>76,>77,>78,>79,>75,>77,>7A,>7B,>7C,>7D,>7E,>75,>7F,>80,>81,>82
+     6286 76  
+     6287 77  
+     6288 78  
+     6289 79  
+     628A 75  
+     628B 77  
+     628C 7A  
+     628D 7B  
+     628E 7C  
+     628F 7D  
+     6290 7E  
+     6291 75  
+     6292 7F  
+     6293 80  
+     6294 81  
+     6295 82  
+0066 6296 83  GLINE4_25 BYTE >83,>84,>77,>85,>86,>87,>77,>7A,>7B,>7C,>7D,>7E,>75,>88,>89,>8A,>8B,>8C
+     6297 84  
+     6298 77  
+     6299 85  
+     629A 86  
+     629B 87  
+     629C 77  
+     629D 7A  
+     629E 7B  
+     629F 7C  
+     62A0 7D  
+     62A1 7E  
+     62A2 75  
+     62A3 88  
+     62A4 89  
+     62A5 8A  
+     62A6 8B  
+     62A7 8C  
+0067 62A8 8D  GLINE5_9 BYTE >8D,>8E
+     62A9 8E  
+0068 62AA 8F  GLINE5_28 BYTE >8F,>90,>91,>92,>93,>94,>95,>96
+     62AB 90  
+     62AC 91  
+     62AD 92  
+     62AE 93  
+     62AF 94  
+     62B0 95  
+     62B1 96  
+0069 62B2 97  GLINE6_28 BYTE >97,>98,>99,>9A,>9B,>9C
+     62B3 98  
+     62B4 99  
+     62B5 9A  
+     62B6 9B  
+     62B7 9C  
+0070          
+0071          G_SCR1
+0072 62B8 31      MOVE >01E8,G@GUDG96,V@>0B00 ; Copy our screen chars
+     62B9 01  
+     62BA E8
+     62BB AB  
+     62BC 00
+     62BD 60  
+     62BE 88
+0073          
+0074 62BF 31  	MOVE >0003,G@GLINE1_25,V@>0036
+     62C0 00  
+     62C1 03
+     62C2 A0  
+     62C3 36
+     62C4 62  
+     62C5 70
+0075 62C6 31  	MOVE >0012,G@GLINE2_25,V@>0047
+     62C7 00  
+     62C8 12
+     62C9 A0  
+     62CA 47
+     62CB 62  
+     62CC 73
+0076 62CD 31  	MOVE >0011,G@GLINE3_24,V@>0067
+     62CE 00  
+     62CF 11
+     62D0 A0  
+     62D1 67
+     62D2 62  
+     62D3 85
+0077 62D4 31  	MOVE >0012,G@GLINE4_25,V@>0087
+     62D5 00  
+     62D6 12
+     62D7 A0  
+     62D8 87
+     62D9 62  
+     62DA 96
+0078 62DB 31  	MOVE >0002,G@GLINE5_9,V@>00A7
+     62DC 00  
+     62DD 02
+     62DE A0  
+     62DF A7
+     62E0 62  
+     62E1 A8
+0079 62E2 31  	MOVE >0008,G@GLINE5_28,V@>00B4
+     62E3 00  
+     62E4 08
+     62E5 A0  
+     62E6 B4
+     62E7 62  
+     62E8 AA
+0080 62E9 31  	MOVE >0006,G@GLINE6_28,V@>00D6
+     62EA 00  
+     62EB 06
+     62EC A0  
+     62ED D6
+     62EE 62  
+     62EF B2
+0081          
+0082 62F0 00      RTN
+0083          

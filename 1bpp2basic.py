@@ -113,61 +113,119 @@ for i in range(first_char, current_char):
         print()
 
 ##########################################
-# Create a basic program defing the screen
-fout = open(basic_filename, "wt")
-line_num = 1000
-print(f"{line_num} REM CREATED FROM {source_bmp}", file=fout)
-print(f"{line_num+10} CALL CLEAR", file=fout)
-line_num += 20
-
-for i,c in enumerate(udg):
-    print(f'{line_num} CALL CHAR({i+first_char}, "', end="", file=fout)
-    for t in c:
-        print(f"{t:02X}",end="", file=fout)
-    print('")', file=fout)
-    line_num += 10
-
-# Next output all characters.
-# We take advantage of the fact that the very first character is used most.
-print(f"{line_num} CALL HCHAR(1,1,{first_char}, 768)", file=fout)
-print(f"{line_num+10} GOTO {line_num+100}", file=fout)
-# Subroutine to convert from printable characters to el weirdo
-sub = line_num+20
-print(f"{line_num+20} FOR I=1 TO LEN(A$)", file=fout)
-print(f"{line_num+30} CALL HCHAR(Y, X+I-1, ASC(SEG$(A$,I,1))+50)", file=fout)
-print(f"{line_num+40} NEXT I", file=fout)
-print(f"{line_num+50} RETURN", file=fout)
-line_num += 100
-
-def flush_string(x : int, y : int, m : str):
-    global line_num
+def flush_string(line_num : int, x : int, y : int, m : str, gosub : int, fout):
     if len(m) == 0:
-        return
+        return line_num
+    # print(f"{type(line_num)} value={line_num}")
     print(f"{line_num} X={x}", file=fout)
     print(f"{line_num+10} Y={y}", file=fout)
     print(f'{line_num+20} A$="{m}"', file=fout)
-    print(f'{line_num+30} GOSUB {sub}', file=fout)
+    print(f'{line_num+30} GOSUB {gosub}', file=fout)
     line_num += 40
+    return line_num
+
+
+# Create a basic program defing the screen
+def save_as_basic_program(basic_filename):
+    fout = open(basic_filename, "wt")
+    line_num = 1000
+    print(f"{line_num} REM CREATED FROM {source_bmp}", file=fout)
+    print(f"{line_num+10} CALL CLEAR", file=fout)
+    line_num += 20
+
+    for i,c in enumerate(udg):
+        print(f'{line_num} CALL CHAR({i+first_char}, "', end="", file=fout)
+        for t in c:
+            print(f"{t:02X}",end="", file=fout)
+        print('")', file=fout)
+        line_num += 10
+
+    # Next output all characters.
+    # We take advantage of the fact that the very first character is used most.
+    print(f"{line_num} CALL HCHAR(1,1,{first_char}, 768)", file=fout)
+    print(f"{line_num+10} GOTO {line_num+100}", file=fout)
+    # Subroutine to convert from printable characters to el weirdo
+    sub = line_num+20
+    print(f"{line_num+20} FOR I=1 TO LEN(A$)", file=fout)
+    print(f"{line_num+30} CALL HCHAR(Y, X+I-1, ASC(SEG$(A$,I,1))+50)", file=fout)
+    print(f"{line_num+40} NEXT I", file=fout)
+    print(f"{line_num+50} RETURN", file=fout)
+    line_num += 100
+
+    # Construct strings for other parts of the screen
+    # Start for parts where the char in question is not first_char i.e. the default
+    w = width >> 3
+    for y in range(height >> 3):
+        k = ""
+        sx = -1
+        for x in range(w):
+            if charmap[ y*w + x] == first_char:
+                line_num = flush_string(line_num, sx+1, y+1, k, sub, fout)
+                k=""
+                sx = -1
+                continue
+            if sx == -1:
+                sx = x # save X coordinate
+            k += chr(charmap[y*w+x]-50)    # add to string
+        # end of x loop, flush if we have something in k
+        line_num = flush_string(line_num, sx+1, y+1, k, sub, fout)
+
+    line_num += 100
+    print(f"{line_num} GOTO {line_num}", file=fout)
+    fout.close()
+
+def save_as_gpl(filename : str):
+    fout = open(filename, "wt")
+    print("* Character definitions", file=fout)
+    for i,c in enumerate(udg):
+        print(f"GUDG{first_char+i}\tBYTE ", end="", file=fout)
+        s = ""
+        for t in c:
+            s += f">{t:02X},"
+        s = s[:-1]  # drop last comma
+        print(f"{s} ; Character {i+first_char}", file=fout)
+
+    # Construct strings for other parts of the screen
+    # Start for parts where the char in question is not first_char i.e. the default
+    w = width >> 3
+    moves = []
+    for y in range(height >> 3):
+        k = ""
+        sx = -1
+        for x in range(w):
+            if charmap[ y*w + x] == first_char:
+                if len(k) == 0:
+                    continue
+                # Print out the bytes for this line, also add to construct commands
+                s = [ f">{ord(t):02X}" for t in k]
+                print(f"GLINE{y}_{x} BYTE {','.join(s)}", file = fout)
+                moves.append(f"\tMOVE >{len(k):04X},G@GLINE{y}_{x},V@>{y*w+sx:04X}")
+                k=""
+                sx = -1
+                continue
+            if sx == -1:
+                sx = x # save X coordinate
+            k += chr(charmap[y*w+x])    # add to string
+        # end of x loop, flush if we have something in k
+        if len(k) > 0:
+            s = [ f">{ord(t):02X}," for t in k]
+            print(f"GLINE{y}_{x} BYTE {','.join(s)}", file = fout)
+            moves.append(f"\tMOVE >{len(k):04X},G@GLINE{y}_{x},V@>{y*w+sx:04X}")
+
+    print(f"""
+G_SCR1 
+    MOVE >{(current_char-first_char)*8:04X},G@GUDG{first_char},V@>{0x800+first_char*8:04X} ; Copy our screen chars     
+""", file = fout)    
+    for s in moves:
+        print(s, file=fout)
+          
+    print(f"""          
+    RTN
+""", file=fout)
     
 
-# Construct strings for other parts of the screen
-# Start for parts where the char in question is not first_char i.e. the default
-w = width >> 3
-for y in range(height >> 3):
-    k = ""
-    sx = -1
-    for x in range(w):
-        if charmap[ y*w + x] == first_char:
-            flush_string(sx+1, y+1, k)
-            k=""
-            sx = -1
-            continue
-        if sx == -1:
-            sx = x # save X coordinate
-        k += chr(charmap[y*w+x]-50)    # add to string
-    # end of x loop, flush if we have something in k
-    flush_string(sx+1, y+1, k)
+    fout.close()
 
-line_num += 100
-print(f"{line_num} GOTO {line_num}", file=fout)
-fout.close()
+if __name__ == "__main__":
+    save_as_basic_program(basic_filename)
+    save_as_gpl("screen.gpl")
