@@ -1,4 +1,14 @@
 # 1bpp2basic
+## Version history
+### 2023-11-26 Now also generates GPL
+The code also creates `screen.gpl` file. I also wrote a quick GPL code `config.gpl` which includes the generated screen.gpl file and renders it on screen - this is code is based partially to the GPL code in the Mini Memory module.
+Compile with xdt99 toolchain like this:
+```
+xga99.py --aorg 0x6000 config.gpl -L config.lst -o config.bin
+```
+The BASIC version is still created as well.
+
+### Initial version
 Simple tool to convert 1 bit per pixel BMP files to TI-99/4A BASIC programs. Note that this (stupid) version has a lot of stuff hardcoded, including the BMP header length. This of course make no sense, but consider the program as a quick-and-dirty implementation. Otherwise known as enterprise software.
 
 The benefit of the simple implementation is that code has no dependencies to python frameworks, it is plain vanilla python3.
