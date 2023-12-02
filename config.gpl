@@ -11,6 +11,31 @@
 * This file includes the screen.gpl file at the very end.
 *
 
+LALIGN EQU >02              Left alignment of text
+LALIGN2 EQU >05
+
+
+* Grommy2 command buffer in scratchpad
+GCMDBYTE EQU >8340
+GCMDP2   EQU >8342
+GCMDP3   EQU >8343
+GCMDP4   EQU >8344
+GCMDP5   EQU >8345
+GCMDP6   EQU >8346
+GCMDP7   EQU >8347
+
+BANK    EQU >8350           Active bank
+SHADOW  EQU >8351           Shadow enable / disable
+PAD0    EQU >8352
+PAD1    EQU >8353
+PAD2    EQU >8354
+PAD3    EQU >8355
+
+SCANKEY EQU >8375   
+* Hardware interface address
+HWIF     EQU >5FF0
+
+
 G6000  DATA >AA01             standard header  version 1
        DATA >0000             # of programs 0
        DATA >0000             no power up
@@ -46,24 +71,203 @@ GPROG
     DCLR  @>8322           clear error code
     DCLR  @>8348           clear flags      
 
+    CLR    @BANK           Actually init from grommy2 
+    CLR    @SHADOW         Actually init from grommy2 
+
     CALL G@GVDPSETUP  
 
     CALL G@G_SCR1       ; Setup the screen which was automatically generated
 * Use the FMT token to add some strings on the screen    
     FMT
-    COL >00
+    COL LALIGN
     ROW >07
-    HTEX 'TEST STRING'
+    HTEX 'VERSION 0.0.00 BANK 0 SHADOW 0'
+    ROW+ >02
+    COL LALIGN
+    HTEX 'SELECT BANK FOR GROM READS'
     ROW+ >01
-    COL >00
-    HTEX 'STRING2'
+    COL LALIGN2
+    HTEX '0 SYSTEM BANK'
+    ROW+ >01
+    COL LALIGN2
+    HTEX '1 USER BANK 1'
+    ROW+ >01
+    COL LALIGN2
+    HTEX '2 USER BANK 2'
+    ROW+ >01
+    COL LALIGN2
+    HTEX '3 GRAM BANK'
+
+    ROW+ >02
+    COL LALIGN
+    HTEX 'SHADOW RAM'
+    ROW+ >01
+    COL LALIGN2
+    HTEX '4 ENABLE'
+    ROW+ >01
+    COL LALIGN2
+    HTEX '5 DISABLE'
+
+    ROW+ >02
+    COL LALIGN
+    HTEX 'FLASH GRAM TO BANK'
+    ROW+ >01
+    COL LALIGN2
+    HTEX '6 USER BANK 1'
+    ROW+ >01
+    COL LALIGN2
+    HTEX '7 USER BANK 2'
     FEND
+
+* Pattern address of character 0xFF
+PATADR EQU >0800+(255*8)      
+* Test a couple of chars 
+    MOVE 24,G@DENSE_FONT,V@PATADR-24
+    ST >FC,V@>1C
+    ST >FD,V@>1D
+    ST >FE,V@>1E
+
 GWAIT
     SCAN
-    BR    G@GWAIT          wait for the user to press a key
-    CEQ   >0F,@>8375       is it Fctn-9?
-*       BR    G@G60F5          no
+    BS    GOTKEY
+* We did not get a key. Animate something.
+    ST    >FF,V@>001F      Write char FF to top left corner
+    ADD   1,V@PATADR
+    B    G@GWAIT          wait for the user to press a key
+
+
+GOTKEY    
+    CGT   '0'-1,@SCANKEY       greater than >= 0
+    BR    GG01              no skip forward
+    CGT   '9',@SCANKEY        Key greater than '9'?
+    BS    GG01              Yes: skip forward
+    SUB   '0',@SCANKEY
+    CASE  @SCANKEY
+    BR    KEY0
+    BR    KEY1
+    BR    KEY2
+    BR    KEY3
+    BR    KEY4
+    BR    KEY5
+    BR    KEY6
+    BR    KEY7
+    BR    KEY8
+    BR    KEY9
+
+
+KEY4:   ST  1,@SHADOW
+    BR  GG01
+KEY5:   CLR @SHADOW
+    BR  GG01
+KEY6:   ST 2,@SHADOW
+    BR  GG01
+
+KEY0
+KEY1
+KEY2
+KEY3
+    ST @SCANKEY,@BANK
+    BR GG01
+KEY7
+KEY8
+KEY9
+
+
+GG01    
+    CEQ   >0F,@SCANKEY       is it Fctn-9?
+    BR    G@GCONT2         no: GCONT2
     EXIT                   yes: reset the TI-99/4A
+GCONT2
+    CEQ   '6',@SCANKEY      is it 6?
+    BS    UMMA
+
+
+* Update screen to reflect current status
+GUPDATE 
+    ST  '0',@PAD0
+    ADD @SHADOW,@PAD0
+    ST  @PAD0,V@>00FF        Write to VRAM
+
+    ST  '0',@PAD0
+    ADD @BANK,@PAD0
+    ST  @PAD0,V@>00F6        Write to VRAM
+
+
+* Update GROM read bank. First erase bank markings.
+BANKOFS EQU >164
+    ST ' ',V@BANKOFS
+    ST ' ',V@BANKOFS+>20
+    ST ' ',V@BANKOFS+>40
+    ST ' ',V@BANKOFS+>60
+    DCLR @PAD0
+    ST   @BANK,@PAD3        Copy to low byte the bank #
+    DSLL 5,@PAD2          Shift by 5 to get 32 chars per line
+    ST  '*',V@>164(@PAD2)   Screen offset 102
+
+    B   G@GWAIT
+    
+UMMA ST 2,@SHADOW
+    BR GUPDATE
+
+*----------------------------------------
+* Init command buffer in pad
+*----------------------------------------
+GINITCMD
+       MOVE  >0010,G@GROMMY_DAT,@GCMDBYTE    Copy command template from GROM
+       RTN
+
+*----------------------------------------
+* Send command to grommy2
+*----------------------------------------
+GSENDCMD
+       ST   @GCMDBYTE,@GCMDBYTE+1        Setup the complement of command byte
+       XOR   >FF,@GCMDBYTE+1             
+       MOVE  >0010,@GCMDBYTE,G@HWIF      Send command to grommy2
+       RTN
+
+
+GROMMY_DAT 
+       DATA   >00FF,>003F,>0000,>0000
+       TEXT 'EPGROMMY'
+
+
+DENSE_FONT ; Define character cells wihtin 4x8 cell
+; Numnbers 0 and 1
+        BYTE >22    
+        BYTE >56
+        BYTE >52
+        BYTE >52
+        BYTE >52
+        BYTE >52
+        BYTE >27    
+        BYTE >00   
+; Define a cell with 2 and 3                    
+        BYTE >26    
+        BYTE >51
+        BYTE >11
+        BYTE >26
+        BYTE >41
+        BYTE >41
+        BYTE >76    
+        BYTE >00   
+; Define a cell with 4 and 5
+        BYTE >17    
+        BYTE >34
+        BYTE >54
+        BYTE >76
+        BYTE >11
+        BYTE >11
+        BYTE >16    
+        BYTE >00   
+
+* Test code copied from Mini Memory
+       MOVE  >0010,G@GROMMY_DAT,@GCMDBYTE    place parameter string in PAD
+       ST    @>839A,@>8340                Copy command byte
+       ST    @>839A,@>8341                The second byte is its complement
+       XOR   >FF,@>8341
+       ST    @>839B,@>8342                Copy p2.
+       MOVE  >0010,@>8340,G@HWIF         Copy from PAD @8340 to GRAM @5FF0. Does this work? Yes!
+       RTN
 
 
 *----------------------------------------
