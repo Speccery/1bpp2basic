@@ -126,7 +126,12 @@ GPROG
 * Pattern address of character 0xFF
 PATADR EQU >0800+(255*8)      
 * Test a couple of chars 
-    MOVE 24,G@DENSE_FONT,V@PATADR-24
+    MOVE 64,G@DENSE_FONT,V@PATADR-64
+    ST >F7,V@>17
+    ST >F8,V@>18
+    ST >F9,V@>19
+    ST >FA,V@>1A
+    ST >FB,V@>1B
     ST >FC,V@>1C
     ST >FD,V@>1D
     ST >FE,V@>1E
@@ -288,6 +293,51 @@ DENSE_FONT ; Define character cells wihtin 4x8 cell
         BYTE >11
         BYTE >11
         BYTE >16    
+        BYTE >00   
+; Define a cell with 6 and 7
+        BYTE >37    
+        BYTE >41
+        BYTE >62
+        BYTE >52
+        BYTE >52
+        BYTE >52
+        BYTE >22    
+        BYTE >00   
+; Define a cell with 8 and 9
+        BYTE >22    
+        BYTE >55
+        BYTE >55
+        BYTE >23
+        BYTE >51
+        BYTE >51
+        BYTE >26    
+        BYTE >00   
+; Define a cell with A and B
+        BYTE >26    
+        BYTE >55
+        BYTE >55
+        BYTE >76
+        BYTE >55
+        BYTE >55
+        BYTE >56    
+        BYTE >00   
+; Define a cell with C and D
+        BYTE >36    
+        BYTE >45
+        BYTE >45
+        BYTE >45
+        BYTE >45
+        BYTE >45
+        BYTE >36    
+        BYTE >00   
+; Define a cell with E and F
+        BYTE >77    
+        BYTE >44
+        BYTE >44
+        BYTE >66
+        BYTE >44
+        BYTE >44
+        BYTE >74    
         BYTE >00   
 
 * Test code copied from Mini Memory
