@@ -12,7 +12,7 @@
 *
 
 LALIGN EQU >02              Left alignment of text
-LALIGN2 EQU >05
+LALIGN2 EQU >03
 
 
 * Grommy2 command buffer in scratchpad
@@ -85,16 +85,19 @@ GPROG
     HTEX 'VERSION 0.0.00 BANK 0 SHADOW 0'
     ROW+ >02
     COL LALIGN
-    HTEX 'SELECT GROM READS'
+    HTEX 'SELECT GROM    : BANK COPY'
+    ROW+ >01
+    COL LALIGN
+    HTEX 'BANK FOR READS : TO GRAM'
     ROW+ >01
     COL LALIGN2
-    HTEX '0 SYSTEM BANK'
+    HTEX '0 SYSTEM BANK :  A TO COPY'
     ROW+ >01
     COL LALIGN2
-    HTEX '1 USER BANK 1'
+    HTEX '1 USER BANK 1 :  B TO COPY'
     ROW+ >01
     COL LALIGN2
-    HTEX '2 USER BANK 2'
+    HTEX '2 USER BANK 2 :  C TO COPY'
     ROW+ >01
     COL LALIGN2
     HTEX '3 GRAM BANK'
@@ -194,7 +197,7 @@ GUPDATE
 
 
 * Start update GROM read bank. First erase bank markings.
-BANKOFS EQU >164
+BANKOFS EQU >184
     ST ' ',V@BANKOFS
     ST ' ',V@BANKOFS+>20
     ST ' ',V@BANKOFS+>40
@@ -202,7 +205,7 @@ BANKOFS EQU >164
     DCLR @PAD0
     ST   @BANK,@PAD3        Copy to low byte the bank #
     DSLL 5,@PAD2          Shift by 5 to get 32 chars per line
-    ST  '*',V@>164(@PAD2)   Screen offset 102
+    ST  '*',V@BANKOFS(@PAD2)   Screen offset 102
 * End update GROM read bank.    
     B   G@GWAIT
 
