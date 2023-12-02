@@ -30,6 +30,7 @@ PAD0    EQU >8352
 PAD1    EQU >8353
 PAD2    EQU >8354
 PAD3    EQU >8355
+PAD4    EQU >8356
 
 SCANKEY EQU >8375   
 * Hardware interface address
@@ -84,7 +85,7 @@ GPROG
     HTEX 'VERSION 0.0.00 BANK 0 SHADOW 0'
     ROW+ >02
     COL LALIGN
-    HTEX 'SELECT BANK FOR GROM READS'
+    HTEX 'SELECT GROM READS'
     ROW+ >01
     COL LALIGN2
     HTEX '0 SYSTEM BANK'
@@ -171,29 +172,28 @@ KEY3
 KEY7
 KEY8
 KEY9
-
+    CALL  SHOW_VERSION
+    BR    GWAIT
 
 GG01    
     CEQ   >0F,@SCANKEY       is it Fctn-9?
     BR    G@GCONT2         no: GCONT2
     EXIT                   yes: reset the TI-99/4A
+
 GCONT2
-    CEQ   '6',@SCANKEY      is it 6?
-    BS    UMMA
-
-
 * Update screen to reflect current status
 GUPDATE 
+* Status of Shadow RAM enable/disable
     ST  '0',@PAD0
     ADD @SHADOW,@PAD0
     ST  @PAD0,V@>00FF        Write to VRAM
-
+* Status of selected bank
     ST  '0',@PAD0
     ADD @BANK,@PAD0
     ST  @PAD0,V@>00F6        Write to VRAM
 
 
-* Update GROM read bank. First erase bank markings.
+* Start update GROM read bank. First erase bank markings.
 BANKOFS EQU >164
     ST ' ',V@BANKOFS
     ST ' ',V@BANKOFS+>20
@@ -203,11 +203,38 @@ BANKOFS EQU >164
     ST   @BANK,@PAD3        Copy to low byte the bank #
     DSLL 5,@PAD2          Shift by 5 to get 32 chars per line
     ST  '*',V@>164(@PAD2)   Screen offset 102
-
+* End update GROM read bank.    
     B   G@GWAIT
-    
-UMMA ST 2,@SHADOW
-    BR GUPDATE
+
+*----------------------------------------
+* Read grommy2 version, update on screen
+*----------------------------------------
+SHOW_VERSION
+    CALL G@GINITCMD
+    CALL G@GSENDCMD
+* Debug put in a dummy version
+    ST   1,@GCMDP2    
+    ST   2,@GCMDP3
+    ST   34,@GCMDP4
+
+* Show major version in p2
+    ST  '0',@PAD0
+    ADD @GCMDP2,@PAD0
+    ST  @PAD0,V@>00CA        Write to VRAM
+* Show minor version in p3
+    ST  '0',@PAD0
+    ADD @GCMDP3,@PAD0
+    ST  @PAD0,V@>00CC        Write to VRAM
+* Show build version in p4. The build is two digits from 0 to 99
+    CLR  @PAD0              Zero fill as the value to divide is 16 bits§
+    ST   @GCMDP4,@PAD1      
+    DIV  10,@PAD0           Quotiotent in PAD0, remainder PAD1
+    ADD  '0',@PAD0
+    ST   @PAD0,V@>00CE      Write to VRAM
+    ADD  '0',@PAD1          Remainder
+    ST   @PAD1,V@>00CF      Write to VRAM
+    RTN
+
 
 *----------------------------------------
 * Init command buffer in pad
