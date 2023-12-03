@@ -28,11 +28,13 @@ GCMDP7   EQU >8347
 
 BANK    EQU >8350           Active bank
 SHADOW  EQU >8351           Shadow enable / disable
-PAD0    EQU >8352
-PAD1    EQU >8353
-PAD2    EQU >8354
-PAD3    EQU >8355
-PAD4    EQU >8356
+PAD0    EQU >835C
+PAD1    EQU >835D
+PAD2    EQU >835E
+PAD3    EQU >835F
+PAD4    EQU >8360
+DUMPA   EQU >8362           ; GROM Dump address
+VRAMP   EQU >8340           ; VRAM ptr overlays GCMDBYTE
 
 SCANKEY EQU >8375   
 * Hardware interface address
@@ -74,12 +76,14 @@ GPROG
     DCLR  @>8322           clear error code
     DCLR  @>8348           clear flags      
 
+    DCLR   @DUMPA
     CLR    @BANK           Actually init from grommy2 
     CLR    @SHADOW         Actually init from grommy2 
 
     CALL G@GVDPSETUP  
 
     CALL G@G_SCR1       ; Setup the screen which was automatically generated
+SCREEN1:
 * Use the FMT token to add some strings on the screen    
     FMT
     COL LALIGN
@@ -130,7 +134,7 @@ GPROG
 
     ROW+ >01
     COL LALIGN
-    HTEX '9 DUMP GROM'
+    HTEX '9 MORE...'
 
     FEND
 
@@ -225,8 +229,8 @@ KEY8
     ST    '*',V@VALIDIND    ; Command valid indicator
     CALL  SHOW_VERSION
     BR    GWAIT
-KEY9
-    BR    GG01
+KEY9: 
+    B   DUMPSCREEN
 
 KEYA:                       ; Copy bank 0 to GRAM
     ST    0,@GCMDP2
@@ -281,18 +285,150 @@ BANKOFS EQU (32*LAYOUTBAN)+4
     B   G@GWAIT
 
 *----------------------------------------
-* Read grommy2 version, update on screen
+* Second screen with a few features.
+*----------------------------------------
+DUMPSCREEN:
+    ST   ' ',V@VEROFS
+    MOVE 768-VEROFS-1,V@VEROFS,V@VEROFS+1   ; Clear screen bottom
+    FMT
+    COL LALIGN
+    ROW LAYOUTVER
+    HTEX '1 DEC 2 INC DUMP ADDR 3 RET'
+    ROW+ >01
+    COL LALIGN
+    HTEX '0 BURN FIRMWARE FROM GRAM'
+    ROW+ >02
+    COL LALIGN
+    HTEX 'GROM DUMPER'
+    FEND
+
+MAKEDUMP:
+    DST   VEROFS+128,@VRAMP
+    CLR   @PAD2             ; Row counter
+DUMP2:    
+    ST    @DUMPA,@PAD0      ; Hi byte off address
+    CALL  HEXOUT
+    DADD  2,@VRAMP
+    ST    @DUMPA+1,@PAD0    ; Lo byte off address
+    CALL  HEXOUT
+    ST    ':',V@2(@VRAMP)
+    DADD  3,@VRAMP
+    CLR   @PAD1             ; column counter
+; Dump 8 bytes from from 16 bit ptr  DUMPA
+DUMP1:
+    MOVE  1,G@0(@DUMPA),@PAD0    ; Read from GROM pointed to by DUMPA
+    CALL  HEXOUT
+    ST    ' ',V@2(@VRAMP)
+    DADD  3,@VRAMP
+    DINC  @DUMPA
+    INC   @PAD1
+    CEQ   8,@PAD1           ; 8 columns - are we done?
+    BR    DUMP1             ; No: jump to dump1 
+; Advance VRAM pointer, we add and mask to bring pointer to beginning
+; of next line.
+    DADD  >1F,@VRAMP
+    DAND  >0FE0,@VRAMP
+    INC   @PAD2             ; inc Row
+    CEQ   8,@PAD2           ; Done with 8 rows?
+    BR    DUMP2             ; No: jump to dump2
+    DSUB  8*8,@DUMPA           ; Undo the incs in the loop above
+; Wait for keypress
+KW1:    
+    SCAN
+    BR    KW1
+    CGT   '0'-1,@SCANKEY
+    BR    KW1               ; Key less than zero -> loop
+    CGT   '4',@SCANKEY      ; Key over '4' -> loop
+    BS    KW1
+    SUB   '0',@SCANKEY
+    CASE  @SCANKEY          ; BUGBUG make range check
+    BR    DKEY0
+    BR    DKEY1
+    BR    DKEY2
+    BR    DKEY3
+    BR    DKEY4 
+
+DKEY1:
+    DSUB  64,@DUMPA
+    B     MAKEDUMP
+DKEY2:
+    DADD  64,@DUMPA
+    B     MAKEDUMP
+DKEY3:
+    ST   ' ',V@VEROFS
+    MOVE 768-VEROFS-1,V@VEROFS,V@VEROFS+1   ; Clear screen bottom
+    B     SCREEN1
+DKEY0:      ; Burn to flash - to be implemented.
+    BR    MAKEDUMP
+
+DKEY4:      ; Command to fill GRAM with >FF, all 24K
+    DCLR  @PAD0         ; Our address in GROM area
+    DST   >FFFF,@PAD2   ; Fill value, 2 bytes
+FILL1:    
+*    MOVE  2,@PAD2,G@0(@PAD0)   ; Hmm no indexed instruction to write GRAM...
+    DADD  2,@PAD0
+    DCEQ  >6000,@PAD0
+    BR    FILL1
+    B     MAKEDUMP
+
+*----------------------------------------
+* Display in HEX the byte in PAD0
+*----------------------------------------
+HEXOUT:
+    ST   @PAD0,@PAD4
+    SRL   >04,@PAD4       isolate first nibble
+    CGT   >09,@PAD4       greater than 9?
+    BS    HEX1            yes
+    ADD   >30,@PAD4       no: make it char 0-9
+    BR    HEX2
+HEX1: ADD   >37,@PAD4      yes: make it char A-F
+HEX2: 
+; Output first hex digit (most significant digit)
+    ST    @PAD4,V@0(@VRAMP)
+; Work on 2nd digit    
+    ST    @PAD0,@PAD4     copy number
+    AND   >0F,@PAD4       isolate second nibble
+    CGT   >09,@PAD4       greater than 9?
+    BS    HEX3          yes
+    ADD   >30,@PAD4       no: make it char 0-9
+    BR    HEX4
+HEX3  ADD   >37,@PAD4       yes: make it char A-F
+HEX4:
+; Output 2nd hex digit (least significant digit)
+    ST    @PAD4,V@1(@VRAMP)
+    RTN
+
+
+*----------------------------------------
+* Read grommy2 version, update on screen.
+* Also read and set bank & shadow values.
 *----------------------------------------
 SHOW_VERSION
     CALL G@GINITCMD
     CALL G@GSENDCMD
-** Debug put in a dummy version
-*    ST   1,@GCMDP2    
-*    ST   2,@GCMDP3
-*    ST   34,@GCMDP4
+* Check result of command - did we get OK?
+    MOVE 2,G@HWIF,@PAD0
+    DCEQ >4F4B,@PAD0        ; did we get OK?
+    BS   VER_OK             ; Yes: go to VER_OK
+** No grommy2 detected. Put in dummy data.    
+    DCLR @PAD2              ; Major and minor zero
+    ST   99,@PAD4           ; Build 99
+    CLR  @SHADOW
+    CLR  @BANK
+    BR   VER1
+VER_OK:     ; grommy responded, read data
 * Copy values from GROM IF to pad
     MOVE 3,G@HWIF+8,@PAD2
-
+* Get active bank from grommy2
+    MOVE 1,G@HWIF+3,@BANK
+    AND  >0F,@BANK
+    CEQ  8,@BANK            ; Is GRAM bank 8 selected?
+    BR   NOGRAM1            ; No, we're good
+    ST   3,@BANK            ; yes, convert to 3 here
+NOGRAM1:    
+* Get RAM shadow from grommy2
+    MOVE 1,G@HWIF+4,@SHADOW
+VER1:
 * Show major version in p2
     ST  '0',@PAD0
     ADD @PAD2,@PAD0
@@ -309,15 +445,6 @@ SHOW_VERSION
     ST   @PAD0,V@VEROFS+>E      Write to VRAM
     ADD  '0',@PAD1          Remainder
     ST   @PAD1,V@VEROFS+>F      Write to VRAM
-* Get active bank from grommy2
-    MOVE 1,G@HWIF+3,@BANK
-    AND  >0F,@BANK
-    CEQ  8,@BANK            ; Is GRAM bank 8 selected?
-    BR   NOGRAM1            ; No, we're good
-    ST   3,@BANK            ; yes, convert to 3 here
-NOGRAM1:    
-* Get RAM shadow from grommy2
-    MOVE 1,G@HWIF+4,@SHADOW
     RTN
 
 
