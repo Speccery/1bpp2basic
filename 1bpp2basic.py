@@ -14,7 +14,7 @@
 #
 
 ### config start ###
-source_bmp = "grommy2a_config-1bpp.bmp"
+source_bmp = "grommy2-1bpp-named.bmp"
 offset_to_bits = 0x92   # hardcoded, not good...
 first_char = 96
 width = 256

@@ -11,10 +11,11 @@
 * This file includes the screen.gpl file at the very end.
 *
 
-LALIGN EQU >02              Left alignment of text
-LALIGN2 EQU >03
-
-
+LALIGN    EQU >02              Left alignment of text
+LALIGN2   EQU >03
+LAYOUTVER EQU 5         Row for Version number
+LAYOUTBAN EQU 8        Row for selected bank display
+VEROFS    EQU 32*LAYOUTVER
 * Grommy2 command buffer in scratchpad
 GCMDBYTE EQU >8340
 GCMDP2   EQU >8342
@@ -81,23 +82,20 @@ GPROG
 * Use the FMT token to add some strings on the screen    
     FMT
     COL LALIGN
-    ROW >07
+    ROW LAYOUTVER
     HTEX 'VERSION 0.0.00 BANK 0 SHADOW 0'
-    ROW+ >02
-    COL LALIGN
-    HTEX 'SELECT GROM    : BANK COPY'
     ROW+ >01
     COL LALIGN
-    HTEX 'BANK FOR READS : TO GRAM'
+    HTEX 'SELECT GROM BANK FOR READS'
     ROW+ >01
     COL LALIGN2
-    HTEX '0 SYSTEM BANK :  A TO COPY'
+    HTEX '0 SYSTEM BANK'
     ROW+ >01
     COL LALIGN2
-    HTEX '1 USER BANK 1 :  B TO COPY'
+    HTEX '1 USER BANK 1'
     ROW+ >01
     COL LALIGN2
-    HTEX '2 USER BANK 2 :  C TO COPY'
+    HTEX '2 USER BANK 2'
     ROW+ >01
     COL LALIGN2
     HTEX '3 GRAM BANK'
@@ -107,34 +105,42 @@ GPROG
     HTEX 'SHADOW RAM'
     ROW+ >01
     COL LALIGN2
-    HTEX '4 ENABLE'
-    ROW+ >01
-    COL LALIGN2
-    HTEX '5 DISABLE'
+    HTEX '4 ENABLE     5 DISABLE'
 
     ROW+ >02
     COL LALIGN
-    HTEX 'FLASH GRAM TO BANK'
+    HTEX 'FLASH GRAM TO USER BANK'
     ROW+ >01
     COL LALIGN2
-    HTEX '6 USER BANK 1'
+    HTEX '6 BANK 1     7 BANK 2'
+
+    ROW+ >02
+    COL LALIGN
+    HTEX 'COPY ROM BANK TO GRAM'
     ROW+ >01
     COL LALIGN2
-    HTEX '7 USER BANK 2'
+    HTEX 'A COPY FROM SYSTEM BANK'
+    ROW+ >01
+    COL LALIGN2
+    HTEX 'B COPY FROM USER BANK 1'
+    ROW+ >01
+    COL LALIGN2
+    HTEX 'C COPY FROM USER BANK 2'
+
     FEND
 
 * Pattern address of character 0xFF
 PATADR EQU >0800+(255*8)      
 * Test a couple of chars 
-    MOVE 64,G@DENSE_FONT,V@PATADR-64
-    ST >F7,V@>17
-    ST >F8,V@>18
-    ST >F9,V@>19
-    ST >FA,V@>1A
-    ST >FB,V@>1B
-    ST >FC,V@>1C
-    ST >FD,V@>1D
-    ST >FE,V@>1E
+*    MOVE 64,G@DENSE_FONT,V@PATADR-64
+*    ST >F7,V@0
+*    ST >F8,V@1
+*    ST >F9,V@2
+*    ST >FA,V@3
+*    ST >FB,V@4
+*    ST >FC,V@5
+*    ST >FD,V@6
+*    ST >FE,V@7
 
 GWAIT
     SCAN
@@ -194,15 +200,15 @@ GUPDATE
 * Status of Shadow RAM enable/disable
     ST  '0',@PAD0
     ADD @SHADOW,@PAD0
-    ST  @PAD0,V@>00FF        Write to VRAM
+    ST  @PAD0,V@VEROFS+>1F        Write to VRAM
 * Status of selected bank
     ST  '0',@PAD0
     ADD @BANK,@PAD0
-    ST  @PAD0,V@>00F6        Write to VRAM
+    ST  @PAD0,V@VEROFS+>16  ; Write to VRAM
 
 
 * Start update GROM read bank. First erase bank markings.
-BANKOFS EQU >184
+BANKOFS EQU (32*LAYOUTBAN)+4
     ST ' ',V@BANKOFS
     ST ' ',V@BANKOFS+>20
     ST ' ',V@BANKOFS+>40
@@ -228,19 +234,19 @@ SHOW_VERSION
 * Show major version in p2
     ST  '0',@PAD0
     ADD @GCMDP2,@PAD0
-    ST  @PAD0,V@>00CA        Write to VRAM
+    ST  @PAD0,V@VEROFS+>A        Write to VRAM
 * Show minor version in p3
     ST  '0',@PAD0
     ADD @GCMDP3,@PAD0
-    ST  @PAD0,V@>00CC        Write to VRAM
+    ST  @PAD0,V@VEROFS+>C        Write to VRAM
 * Show build version in p4. The build is two digits from 0 to 99
     CLR  @PAD0              Zero fill as the value to divide is 16 bits§
     ST   @GCMDP4,@PAD1      
     DIV  10,@PAD0           Quotiotent in PAD0, remainder PAD1
     ADD  '0',@PAD0
-    ST   @PAD0,V@>00CE      Write to VRAM
+    ST   @PAD0,V@VEROFS+>E      Write to VRAM
     ADD  '0',@PAD1          Remainder
-    ST   @PAD1,V@>00CF      Write to VRAM
+    ST   @PAD1,V@VEROFS+>F      Write to VRAM
     RTN
 
 
