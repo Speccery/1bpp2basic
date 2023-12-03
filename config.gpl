@@ -16,6 +16,7 @@ LALIGN2   EQU >03
 LAYOUTVER EQU 5         Row for Version number
 LAYOUTBAN EQU 8        Row for selected bank display
 VEROFS    EQU 32*LAYOUTVER
+VALIDIND  EQU VEROFS-29         ; Indicator for valid command
 * Grommy2 command buffer in scratchpad
 GCMDBYTE EQU >8340
 GCMDP2   EQU >8342
@@ -127,6 +128,10 @@ GPROG
     COL LALIGN2
     HTEX 'C COPY FROM USER BANK 2'
 
+    ROW+ >01
+    COL LALIGN
+    HTEX '9 DUMP GROM'
+
     FEND
 
 * Pattern address of character 0xFF
@@ -142,6 +147,9 @@ PATADR EQU >0800+(255*8)
 *    ST >FD,V@6
 *    ST >FE,V@7
 
+    CALL  SHOW_VERSION      ; Get version, bank, shadow info
+    B     GUPDATE           ; update screen
+
 GWAIT
     SCAN
     BS    GOTKEY
@@ -151,11 +159,13 @@ GWAIT
     B    G@GWAIT          wait for the user to press a key
 
 
-GOTKEY    
+GOTKEY:
+    ST    @SCANKEY,V@VEROFS-30  ; Make key visible.
+    ST    ' ',V@VALIDIND        ; Assume invalid CMD  
     CGT   '0'-1,@SCANKEY       greater than >= 0
     BR    GG01              no skip forward
     CGT   '9',@SCANKEY        Key greater than '9'?
-    BS    GG01              Yes: skip forward
+    BS    CHECK_ABC             ; Yes: skip forward
     SUB   '0',@SCANKEY
     CASE  @SCANKEY
     BR    KEY0
@@ -168,28 +178,78 @@ GOTKEY
     BR    KEY7
     BR    KEY8
     BR    KEY9
+CHECK_ABC 
+; Commands A,B and C
+    CGT   'A'-1,@SCANKEY
+    BR    GG01
+    CGT   'C',@SCANKEY
+    BS    GG01
+    SUB   'A',@SCANKEY
+    CASE  @SCANKEY
+    BR    KEYA
+    BR    KEYB
+    BR    KEYC
 
-
-KEY4:   ST  1,@SHADOW
-    BR  GG01
-KEY5:   CLR @SHADOW
-    BR  GG01
-KEY6:   ST 2,@SHADOW
-    BR  GG01
-
+KEY4:   
+    ST  1,@SHADOW
+SHADOWSET
+    ST  @SHADOW,@GCMDP2    ; Set parameter 2
+    ST  3,@GCMDBYTE         ; Command 3 shadow enable/disable
+    BR  ISSUECMD
+KEY5:   
+    CLR @SHADOW
+    BR  SHADOWSET
 KEY0
 KEY1
 KEY2
+    ST   @SCANKEY,@BANK
+    ST   @SCANKEY,@GCMDP2    ; Set parameter 2
+BANKSEL
+    ST   1,@GCMDBYTE         ; Command 1 select bank for reads
+    BR  ISSUECMD
 KEY3
-    ST @SCANKEY,@BANK
-    BR GG01
-KEY7
+    ST   @SCANKEY,@BANK
+    ST   8,@GCMDP2           ; GRAM bank is 8
+    BR   BANKSEL
+
+KEY6:                       ; Flash GRAM to user bank 1
+    ST   >01,@GCMDP2        ; User bank 1
+GRAM2FLASH    
+    ST   >3F,@GCMDP3        ; Bit mask: flash entire bank
+    ST   4,@GCMDBYTE
+    BR  ISSUECMD
+KEY7:                       ; Flash GRAM to user bank 2
+    ST   >02,@GCMDP2        ; User bank 2
+    BR   GRAM2FLASH
 KEY8
-KEY9
+    ST    '*',V@VALIDIND    ; Command valid indicator
     CALL  SHOW_VERSION
     BR    GWAIT
+KEY9
+    BR    GG01
 
-GG01    
+KEYA:                       ; Copy bank 0 to GRAM
+    ST    0,@GCMDP2
+COPY2GRAM:
+    ST    '*',V@VALIDIND    ; Command valid indicator   
+    ST    2,@GCMDBYTE
+    BR    ISSUECMD
+KEYB:
+    ST    1,@GCMDP2
+    BR    COPY2GRAM
+KEYC:
+    ST    2,@GCMDP2
+    BR    COPY2GRAM
+
+ISSUECMD1:                  ; Clear last 4 parameter bytes
+    DCLR  @GCMDBYTE+4
+    DCLR  @GCMDBYTE+6
+ISSUECMD:
+    MOVE  8,G@GROMMY_DAT+8,@GCMDBYTE+8  ; Unlock string
+    ST    '*',V@VALIDIND    ; Command valid indicator
+    CALL  GSENDCMD          ; Send command to HW
+
+GG01:    
     CEQ   >0F,@SCANKEY       is it Fctn-9?
     BR    G@GCONT2         no: GCONT2
     EXIT                   yes: reset the TI-99/4A
@@ -226,27 +286,38 @@ BANKOFS EQU (32*LAYOUTBAN)+4
 SHOW_VERSION
     CALL G@GINITCMD
     CALL G@GSENDCMD
-* Debug put in a dummy version
-    ST   1,@GCMDP2    
-    ST   2,@GCMDP3
-    ST   34,@GCMDP4
+** Debug put in a dummy version
+*    ST   1,@GCMDP2    
+*    ST   2,@GCMDP3
+*    ST   34,@GCMDP4
+* Copy values from GROM IF to pad
+    MOVE 3,G@HWIF+8,@PAD2
 
 * Show major version in p2
     ST  '0',@PAD0
-    ADD @GCMDP2,@PAD0
+    ADD @PAD2,@PAD0
     ST  @PAD0,V@VEROFS+>A        Write to VRAM
 * Show minor version in p3
     ST  '0',@PAD0
-    ADD @GCMDP3,@PAD0
+    ADD @PAD3,@PAD0
     ST  @PAD0,V@VEROFS+>C        Write to VRAM
 * Show build version in p4. The build is two digits from 0 to 99
     CLR  @PAD0              Zero fill as the value to divide is 16 bits§
-    ST   @GCMDP4,@PAD1      
+    ST   @PAD4,@PAD1      
     DIV  10,@PAD0           Quotiotent in PAD0, remainder PAD1
     ADD  '0',@PAD0
     ST   @PAD0,V@VEROFS+>E      Write to VRAM
     ADD  '0',@PAD1          Remainder
     ST   @PAD1,V@VEROFS+>F      Write to VRAM
+* Get active bank from grommy2
+    MOVE 1,G@HWIF+3,@BANK
+    AND  >0F,@BANK
+    CEQ  8,@BANK            ; Is GRAM bank 8 selected?
+    BR   NOGRAM1            ; No, we're good
+    ST   3,@BANK            ; yes, convert to 3 here
+NOGRAM1:    
+* Get RAM shadow from grommy2
+    MOVE 1,G@HWIF+4,@SHADOW
     RTN
 
 
