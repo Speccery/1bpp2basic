@@ -296,6 +296,12 @@ DUMPSCREEN:
     HTEX '1 DEC 2 INC DUMP ADDR 3 RET'
     ROW+ >01
     COL LALIGN
+    HTEX '4 FILL GRAM WITH FF'
+    ROW+ >01
+    COL LALIGN
+    HTEX '5 COPY 24K GROM 8000 TO GRAM'
+    ROW+ >01
+    COL LALIGN
     HTEX '0 BURN FIRMWARE FROM GRAM'
     ROW+ >02
     COL LALIGN
@@ -303,7 +309,7 @@ DUMPSCREEN:
     FEND
 
 MAKEDUMP:
-    DST   VEROFS+128,@VRAMP
+    DST   VEROFS+160,@VRAMP
     CLR   @PAD2             ; Row counter
 DUMP2:    
     ST    @DUMPA,@PAD0      ; Hi byte off address
@@ -338,7 +344,7 @@ KW1:
     BR    KW1
     CGT   '0'-1,@SCANKEY
     BR    KW1               ; Key less than zero -> loop
-    CGT   '4',@SCANKEY      ; Key over '4' -> loop
+    CGT   '5',@SCANKEY      ; Key over '4' -> loop
     BS    KW1
     SUB   '0',@SCANKEY
     CASE  @SCANKEY          ; BUGBUG make range check
@@ -347,6 +353,7 @@ KW1:
     BR    DKEY2
     BR    DKEY3
     BR    DKEY4 
+    BR    DKEY5
 
 DKEY1:
     DSUB  64,@DUMPA
@@ -358,17 +365,45 @@ DKEY3:
     ST   ' ',V@VEROFS
     MOVE 768-VEROFS-1,V@VEROFS,V@VEROFS+1   ; Clear screen bottom
     B     SCREEN1
-DKEY0:      ; Burn to flash - to be implemented.
+DKEY0:      ; Burn to Flash
+; Ask for confirmation. Clear a few rows to clarify
+    ST   ' ',V@VEROFS
+    MOVE 768-VEROFS-1,V@VEROFS,V@VEROFS+1   ; Clear screen bottom
+    FMT
+    COL LALIGN
+    ROW LAYOUTVER
+    HTEX '!!PRESS 1 TO CONFIRM!!'
+    FEND
+WAIT0:
+    SCAN
+    BR    WAIT0
+    CEQ   '1',@SCANKEY       is the key one?
+    BR    G@DUMPSCREEN       no: DUMPSCREEN
+; Yes, continue to Flash the MCU
+    BACK  >F3              screen colors: white on some other color
+    ST    'F',V@VALIDIND    ; Command valid indicator   
+    ST    6,@GCMDBYTE
+    DST   >1234,@GCMDBYTE+2
+    DCLR  @GCMDBYTE+4
+    DCLR  @GCMDBYTE+6
+    CALL  ISSUECMD
+; We probably do not return from this call... GROMMY might be in a funny state
     BR    MAKEDUMP
 
 DKEY4:      ; Command to fill GRAM with >FF, all 24K
-    DCLR  @PAD0         ; Our address in GROM area
     DST   >FFFF,@PAD2   ; Fill value, 2 bytes
-FILL1:    
-*    MOVE  2,@PAD2,G@0(@PAD0)   ; Hmm no indexed instruction to write GRAM...
-    DADD  2,@PAD0
-    DCEQ  >6000,@PAD0
-    BR    FILL1
+    ST    '*',V@VALIDIND    ; Command valid indicator   
+    MOVE  >1,@PAD2,G@>0
+    MOVE  >5FFF,G@>0,G@>1
+    ST    ' ',V@VALIDIND    ; Command valid indicator   
+    B     MAKEDUMP
+
+DKEY5:
+    ST    '*',V@VALIDIND    ; Command valid indicator   
+    MOVE >2000,G@>8000,G@>0000
+    MOVE >2000,G@>A000,G@>2000
+    MOVE >2000,G@>C000,G@>4000
+    ST    ' ',V@VALIDIND    ; Command valid indicator   
     B     MAKEDUMP
 
 *----------------------------------------
