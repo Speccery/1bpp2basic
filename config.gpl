@@ -302,6 +302,12 @@ DUMPSCREEN:
     HTEX '5 COPY 24K GROM 8000 TO GRAM'
     ROW+ >01
     COL LALIGN
+    HTEX '6 ARM EXECUTE 0000'
+    ROW+ >01
+    COL LALIGN
+    HTEX '7 ARM EXECUTE 4000'
+    ROW+ >01
+    COL LALIGN
     HTEX '0 BURN FIRMWARE FROM GRAM'
     ROW+ >02
     COL LALIGN
@@ -309,7 +315,7 @@ DUMPSCREEN:
     FEND
 
 MAKEDUMP:
-    DST   VEROFS+160,@VRAMP
+    DST   VEROFS+224,@VRAMP
     CLR   @PAD2             ; Row counter
 DUMP2:    
     ST    @DUMPA,@PAD0      ; Hi byte off address
@@ -344,7 +350,7 @@ KW1:
     BR    KW1
     CGT   '0'-1,@SCANKEY
     BR    KW1               ; Key less than zero -> loop
-    CGT   '5',@SCANKEY      ; Key over '4' -> loop
+    CGT   '7',@SCANKEY      ; Key over '7' -> loop
     BS    KW1
     SUB   '0',@SCANKEY
     CASE  @SCANKEY          ; BUGBUG make range check
@@ -354,6 +360,22 @@ KW1:
     BR    DKEY3
     BR    DKEY4 
     BR    DKEY5
+    BR    DKEY6
+    BR    DKEY7
+
+ASKCONFIRM:
+; Ask for confirmation. Clear a few rows to clarify
+    ST   ' ',V@VEROFS
+    MOVE 768-VEROFS-1,V@VEROFS,V@VEROFS+1   ; Clear screen bottom
+    FMT
+    COL LALIGN
+    ROW LAYOUTVER
+    HTEX '!!PRESS 1 TO CONFIRM!!'
+    FEND
+WAIT0:
+    SCAN
+    BR    WAIT0
+    RTN
 
 DKEY1:
     DSUB  64,@DUMPA
@@ -366,17 +388,7 @@ DKEY3:
     MOVE 768-VEROFS-1,V@VEROFS,V@VEROFS+1   ; Clear screen bottom
     B     SCREEN1
 DKEY0:      ; Burn to Flash
-; Ask for confirmation. Clear a few rows to clarify
-    ST   ' ',V@VEROFS
-    MOVE 768-VEROFS-1,V@VEROFS,V@VEROFS+1   ; Clear screen bottom
-    FMT
-    COL LALIGN
-    ROW LAYOUTVER
-    HTEX '!!PRESS 1 TO CONFIRM!!'
-    FEND
-WAIT0:
-    SCAN
-    BR    WAIT0
+    CALL  G@ASKCONFIRM
     CEQ   '1',@SCANKEY       is the key one?
     BR    G@DUMPSCREEN       no: DUMPSCREEN
 ; Yes, continue to Flash the MCU
@@ -405,6 +417,25 @@ DKEY5:
     MOVE >2000,G@>C000,G@>4000
     ST    ' ',V@VALIDIND    ; Command valid indicator   
     B     MAKEDUMP
+
+DKEY6:      ; ARM execute 0000
+    DST   >0000,@GCMDBYTE+2
+DKEY6ASK:
+    CALL  G@ASKCONFIRM
+    CEQ   '1',@SCANKEY       is the key one?
+    BR    G@DUMPSCREEN       no: DUMPSCREEN
+    ST    'F',V@VALIDIND    ; Command valid indicator   
+    ST    7,@GCMDBYTE
+    DCLR  @GCMDBYTE+4
+    DCLR  @GCMDBYTE+6
+    CALL  ISSUECMD
+; We probably do not return from this call... GROMMY might be in a funny state
+    BR    MAKEDUMP
+
+DKEY7:
+    DST   >0040,@GCMDBYTE+2  ; ARM has different byte order
+    BR    DKEY6ASK
+
 
 *----------------------------------------
 * Display in HEX the byte in PAD0
