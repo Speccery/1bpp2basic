@@ -97,6 +97,26 @@ GPROG
     CALL G@GVDPSETUP  
 
     CALL G@G_SCR1       ; Setup the screen which was automatically generated
+* Setup additional chars E0..EF as numbers 0..9 and A..F
+* 0x980 = hex(0x800+ord('0')*8)
+* 0xa08 = hex(0x800+ord('A')*8)
+* 0xf00 = hex(0x800+0xe0*8)
+* 0xf50 = hex(0x800+0xea*8)
+    MOVE 10*8,V@>980,V@>F00  * 10 number patterns
+    MOVE  6*8,V@>A08,V@>F50
+* Set the colors for these characters.
+    ST   >A5,V@>39C    
+    ST   >A5,V@>39D
+* Make the fonts "bold"
+    DST  >F00,@VRAMP
+!   ST   V@0(@VRAMP),@PAD0
+    SRL  1,@PAD0
+    OR   V@0(@VRAMP),@PAD0
+    ST  @PAD0,V@0(@VRAMP)
+    DINC @VRAMP
+    DCEQ >F80,@VRAMP
+    BR   -!
+
 SCREEN1:
 * Use the FMT token to add some strings on the screen    
     FMT
@@ -329,6 +349,16 @@ DUMPSCREEN:
     FEND
 
     MOVE >002C,G@BIN2HEX,@>8300 ; Move assembly code in place
+
+; test characters on last line
+    ST  >E0,@PAD0
+    DST 32*23,@VRAMP
+!   ST  @PAD0,V@0(@VRAMP)
+    DINC @VRAMP
+    INC @PAD0
+    CEQ  >F0,@PAD0 
+    BR  -!
+
 
 ; First test in units of frame count (VDPTIMER)
 ; Test runs for 4 frames.
