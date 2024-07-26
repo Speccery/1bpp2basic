@@ -50,6 +50,9 @@ VDPTIMER EQU >8379          ; Incremented by VDP interrupts
 * Hardware interface address
 HWIF     EQU >5FF0
 
+HEXBASECH EQU >E0         ; Base character for hex display
+ALIVECH   EQU >DF         ; Placed in top right corner, show we are alive
+
 
 G6000  DATA >AA01             standard header  version 1
        DATA >0000             # of programs 0
@@ -102,8 +105,12 @@ GPROG
 * 0xa08 = hex(0x800+ord('A')*8)
 * 0xf00 = hex(0x800+0xe0*8)
 * 0xf50 = hex(0x800+0xea*8)
-    MOVE 10*8,V@>980,V@>F00  * 10 number patterns
-    MOVE  6*8,V@>A08,V@>F50
+CHSRC1 EQU >800+(8*'0')
+CHSRC2 EQU >800+(8*'A')
+CHOFS1 EQU >800+(8*HEXBASECH)
+CHOFS2 EQU >800+(8*(HEXBASECH+10))
+    MOVE 10*8,V@CHSRC1,V@CHOFS1  * 10 number patterns
+    MOVE  6*8,V@CHSRC2,V@CHOFS2
 * Set the colors for these characters.
     ST   >A5,V@>39C    
     ST   >A5,V@>39D
@@ -116,6 +123,10 @@ GPROG
     DINC @VRAMP
     DCEQ >F80,@VRAMP
     BR   -!
+* Copy the fonts to make inverse duplicates
+    MOVE >80,V@>F00,V@>F80
+    ST   >5A,V@>39E    
+    ST   >5A,V@>39F
 
 SCREEN1:
 * Use the FMT token to add some strings on the screen    
@@ -172,8 +183,8 @@ SCREEN1:
 
     FEND
 
-* Pattern address of character 0xFF
-PATADR EQU >0800+(255*8)      
+* Pattern address of character ALIVECH
+PATADR EQU >0800+(8*ALIVECH)      
 * Test a couple of chars 
 *    MOVE 64,G@DENSE_FONT,V@PATADR-64
 *    ST >F7,V@0
@@ -192,8 +203,8 @@ GWAIT
     SCAN
     BS    GOTKEY
 * We did not get a key. Animate something.
-    ST    >FF,V@>001F      Write char FF to top right corner
-    ADD   1,V@PATADR
+    ST    ALIVECH,V@>001F      Write char FF to top right corner
+    INC   V@PATADR
     B    G@GWAIT          wait for the user to press a key
 
 
@@ -351,12 +362,12 @@ DUMPSCREEN:
     MOVE >002C,G@BIN2HEX,@>8300 ; Move assembly code in place
 
 ; test characters on last line
-    ST  >E0,@PAD0
-    DST 32*23,@VRAMP
+    ST  HEXBASECH,@PAD0
+    DST 32*23,@VRAMP          * Beginning of last row
 !   ST  @PAD0,V@0(@VRAMP)
     DINC @VRAMP
     INC @PAD0
-    CEQ  >F0,@PAD0 
+    CZ  @PAD0 
     BR  -!
 
 
@@ -365,9 +376,12 @@ DUMPSCREEN:
 ;   GPL with original HEXOUT: 119 ticks
 ;   GPL call to GPL HEXOUT routine issuing XML >F0:  55 ticks
 ;   Replace GPL call with XML >F0: 47 ticks
+;   All GPL with new hex characters, no gap between '9' and 'A': 87 ticks
+;     This also handles two characers at a time. But still slow.
     .defm DOHEXOUT
-    XML >F0
-    ;;; CALL  HEXOUT
+    ;;; XML >F0
+    ;;;; CALL  HEXOUT1
+    CALL  HEXOUT2
     .endm
 
 **    B  SKIPBENCH
@@ -390,7 +404,7 @@ MAKEDUMP:
 KW1:    
     SCAN
     BS    DGOTKEY
-    ADD   1,V@PATADR
+    INC   V@PATADR
     B     KW1
 DGOTKEY:
     ST    @SCANKEY,V@VEROFS-30  ; Make key visible.
@@ -401,7 +415,7 @@ DGOTKEY:
     CGT   '7',@SCANKEY      ; Key over '7' -> loop
     BS    KW1
     SUB   '0',@SCANKEY
-    CASE  @SCANKEY          ; BUGBUG make range check
+    CASE  @SCANKEY          
     BR    DKEY0
     BR    DKEY1
     BR    DKEY2
@@ -572,19 +586,16 @@ HEX4:
     ST    @PAD4,V@1(@VRAMP)
     RTN
 
+* Use the new hex characters which do not have a gap between 9 and A
 HEXOUT2:
-    CLR   @PAD4
-    ST    @PAD0,@PAD5
-    SRL   >04,@PAD5       isolate first nibble
-    MOVE  1,G@HEXES(@PAD4),V@0(@VRAMP)
-    ST    @PAD0,@PAD5
-    AND   >0F,@PAD5
-    MOVE  1,G@HEXES(@PAD4),V@1(@VRAMP)
-    RTN
-
-
-HEXES: BYTE '0','1','Z','3','4','5','6','7'
-  BYTE '8','9','A','B','C','D','E','F'
+    ST   @PAD0,@PAD4
+    ST   @PAD0,@PAD5
+    SRL  >04,@PAD4       isolate first nibble
+    AND  >0F,@PAD5 
+TWINHEXBC EQU   (HEXBASECH * 256) + HEXBASECH  
+    DADD TWINHEXBC,@PAD4
+    DST  @PAD4,V@0(VRAMP)
+    RTNC
 
 *----------------------------------------
 * Read grommy2 version, update on screen.
