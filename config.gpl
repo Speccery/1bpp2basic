@@ -36,7 +36,10 @@ PAD4    EQU >8360
 DUMPA   EQU >8362           ; GROM Dump address
 VRAMP   EQU >8340           ; VRAM ptr overlays GCMDBYTE
 
+XREG    EQU >832C
+
 SCANKEY EQU >8375   
+VDPTIMER EQU >8379          ; Incremented by VDP interrupts
 * Hardware interface address
 HWIF     EQU >5FF0
 
@@ -314,7 +317,39 @@ DUMPSCREEN:
     HTEX 'GROM DUMPER'
     FEND
 
+; Run benchmark
+    ST    10,@XREG
+    ST    @VDPTIMER,@XREG+1     ; Read timer
+!   CALL  G@DODUMP
+    DADD  8,@DUMPA
+    DEC   @XREG
+    BR   -!
+    ST    @VDPTIMER,@XREG       ; Read timer
+    DSUB  8*10,@DUMPA
+
 MAKEDUMP:
+    CALL G@DODUMP
+
+; Wait for keypress
+KW1:    
+    SCAN
+    BR    KW1
+    CGT   '0'-1,@SCANKEY
+    BR    KW1               ; Key less than zero -> loop
+    CGT   '7',@SCANKEY      ; Key over '7' -> loop
+    BS    KW1
+    SUB   '0',@SCANKEY
+    CASE  @SCANKEY          ; BUGBUG make range check
+    BR    DKEY0
+    BR    DKEY1
+    BR    DKEY2
+    BR    DKEY3
+    BR    DKEY4 
+    BR    DKEY5
+    BR    DKEY6
+    BR    DKEY7
+
+DODUMP:
     DST   VEROFS+224,@VRAMP
     CLR   @PAD2             ; Row counter
 DUMP2:    
@@ -344,24 +379,7 @@ DUMP1:
     CEQ   8,@PAD2           ; Done with 8 rows?
     BR    DUMP2             ; No: jump to dump2
     DSUB  8*8,@DUMPA           ; Undo the incs in the loop above
-; Wait for keypress
-KW1:    
-    SCAN
-    BR    KW1
-    CGT   '0'-1,@SCANKEY
-    BR    KW1               ; Key less than zero -> loop
-    CGT   '7',@SCANKEY      ; Key over '7' -> loop
-    BS    KW1
-    SUB   '0',@SCANKEY
-    CASE  @SCANKEY          ; BUGBUG make range check
-    BR    DKEY0
-    BR    DKEY1
-    BR    DKEY2
-    BR    DKEY3
-    BR    DKEY4 
-    BR    DKEY5
-    BR    DKEY6
-    BR    DKEY7
+    RTN    
 
 ASKCONFIRM:
 ; Ask for confirmation. Clear a few rows to clarify
