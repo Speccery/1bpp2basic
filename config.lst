@@ -1288,9 +1288,9 @@ XGA99 CROSS-ASSEMBLER   VERSION 3.0.1
      6472 5F
 0420          
 0421          DKEY6:      ; ARM execute 0000
-0422 6473 BF      DST   >0000,@GCMDBYTE+2
+0422 6473 BF      DST   >0100,@GCMDBYTE+2   ; thumb bit high
      6474 42  
-     6475 00  
+     6475 01  
      6476 00
 0423          DKEY6ASK:
 0424 6477 06      CALL  G@ASKCONFIRM
@@ -1320,9 +1320,9 @@ XGA99 CROSS-ASSEMBLER   VERSION 3.0.1
      648E 5F  
 0434          
 0435          DKEY7:
-0436 648F BF      DST   >0040,@GCMDBYTE+2  ; ARM has different byte order
+0436 648F BF      DST   >0140,@GCMDBYTE+2  ; ARM has different byte order
      6490 42  
-     6491 00  
+     6491 01  
      6492 40
 0437 6493 44      BR    DKEY6ASK
      6494 77  

@@ -419,7 +419,7 @@ DKEY5:
     B     MAKEDUMP
 
 DKEY6:      ; ARM execute 0000
-    DST   >0000,@GCMDBYTE+2
+    DST   >0100,@GCMDBYTE+2   ; thumb bit high
 DKEY6ASK:
     CALL  G@ASKCONFIRM
     CEQ   '1',@SCANKEY       is the key one?
@@ -433,7 +433,7 @@ DKEY6ASK:
     BR    MAKEDUMP
 
 DKEY7:
-    DST   >0040,@GCMDBYTE+2  ; ARM has different byte order
+    DST   >0140,@GCMDBYTE+2  ; ARM has different byte order
     BR    DKEY6ASK
 
 
