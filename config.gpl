@@ -17,6 +17,14 @@ LAYOUTVER EQU 5         Row for Version number
 LAYOUTBAN EQU 8        Row for selected bank display
 VEROFS    EQU 32*LAYOUTVER
 VALIDIND  EQU VEROFS-29         ; Indicator for valid command
+
+* A few variables for the grommy2 config to use.
+* I am not sure if these are free to use, but I will try :) 
+XREG    EQU >832C   ; ** Program text or token pointer (in BASIC?)
+YREG    EQU >832E   ; ** Pointer to line number tale (in BASIC)
+ZREG    EQU >8330   ; ** Start of line number table pointer (in BASIC)
+; >8332 .. 8337 seem to contain pointers also used by BASIC not GPL
+
 * Grommy2 command buffer in scratchpad
 GCMDBYTE EQU >8340
 GCMDP2   EQU >8342
@@ -33,6 +41,7 @@ PAD1    EQU >835D
 PAD2    EQU >835E
 PAD3    EQU >835F
 PAD4    EQU >8360
+PAD5    EQU >8361
 DUMPA   EQU >8362           ; GROM Dump address
 VRAMP   EQU >8340           ; VRAM ptr overlays GCMDBYTE
 
@@ -79,6 +88,10 @@ GPROG
     DCLR   @DUMPA
     CLR    @BANK           Actually init from grommy2 
     CLR    @SHADOW         Actually init from grommy2 
+
+    DST   >1234,@XREG
+    DST   >5679,@YREG
+    DST   >DEAD,@ZREG
 
     CALL G@GVDPSETUP  
 
@@ -158,7 +171,7 @@ GWAIT
     SCAN
     BS    GOTKEY
 * We did not get a key. Animate something.
-    ST    >FF,V@>001F      Write char FF to top left corner
+    ST    >FF,V@>001F      Write char FF to top right corner
     ADD   1,V@PATADR
     B    G@GWAIT          wait for the user to press a key
 
@@ -314,10 +327,14 @@ DUMPSCREEN:
     HTEX 'GROM DUMPER'
     FEND
 
+    MOVE >002C,G@BIN2HEX,@>8300 ; Move assembly code in place
+
 MAKEDUMP:
     DST   VEROFS+224,@VRAMP
     CLR   @PAD2             ; Row counter
+    ST    '*',V@VALIDIND
 DUMP2:    
+    ST    ' ',V@>FFFF(VRAMP)    ; setup VRAM address
     ST    @DUMPA,@PAD0      ; Hi byte off address
     CALL  HEXOUT
     DADD  2,@VRAMP
@@ -344,10 +361,17 @@ DUMP1:
     CEQ   8,@PAD2           ; Done with 8 rows?
     BR    DUMP2             ; No: jump to dump2
     DSUB  8*8,@DUMPA           ; Undo the incs in the loop above
+    ST    ' ',V@VALIDIND
 ; Wait for keypress
 KW1:    
     SCAN
-    BR    KW1
+    BS    DGOTKEY
+    ADD   1,V@PATADR
+    B     KW1
+DGOTKEY:
+    ST    @SCANKEY,V@VEROFS-30  ; Make key visible.
+    CGT   'X'-1,@SCANKEY    ; Key >= 'X'
+    BS    XYZ               ; Yes: go to XYZ
     CGT   '0'-1,@SCANKEY
     BR    KW1               ; Key less than zero -> loop
     CGT   '7',@SCANKEY      ; Key over '7' -> loop
@@ -362,6 +386,28 @@ KW1:
     BR    DKEY5
     BR    DKEY6
     BR    DKEY7
+
+; Check if we have button X Y Z pressed
+XYZ:  
+    CGT   'Z',@SCANKEY    ; Above Z?
+    BS    KW1             ; Yes: KW1
+; Ok now we need to ask the user for a value and store it to X, Y or Z register. 
+; Show the current value of the variable after character code
+    DST   VEROFS-29,@VRAMP ; Location in VRAM
+    ST    @SCANKEY,@PAD3 
+    SUB   'X',@PAD3       ; Now pad is 0,1,2 for X,Y,Z
+    SLL   1,@PAD3         ; Multiply by 2
+    CLR   @PAD2           ; clear high byte
+    DADD  XREG,@PAD2       ; Add address of XREG, now PAD1:PAD2 is a pointer to value
+
+    ST    @0(@PAD2),@PAD0  ; Hi byte of reg
+    CALL  HEXOUT
+    DADD  2,@VRAMP
+    ST    @1(@PAD2),@PAD0  ; Lo byte of reg 
+    CALL  HEXOUT
+    B     G@KW1
+
+
 
 ASKCONFIRM:
 ; Ask for confirmation. Clear a few rows to clarify
@@ -400,7 +446,7 @@ DKEY0:      ; Burn to Flash
     DCLR  @GCMDBYTE+6
     CALL  ISSUECMD
 ; We probably do not return from this call... GROMMY might be in a funny state
-    BR    MAKEDUMP
+    B     MAKEDUMP
 
 DKEY4:      ; Command to fill GRAM with >FF, all 24K
     DST   >FFFF,@PAD2   ; Fill value, 2 bytes
@@ -441,6 +487,10 @@ DKEY7:
 * Display in HEX the byte in PAD0
 *----------------------------------------
 HEXOUT:
+  XML >F0
+  RTN
+
+HEXOUT1:
     ST   @PAD0,@PAD4
     SRL   >04,@PAD4       isolate first nibble
     CGT   >09,@PAD4       greater than 9?
@@ -464,6 +514,19 @@ HEX4:
     ST    @PAD4,V@1(@VRAMP)
     RTN
 
+HEXOUT2:
+    CLR   @PAD4
+    ST    @PAD0,@PAD5
+    SRL   >04,@PAD5       isolate first nibble
+    MOVE  1,G@HEXES(@PAD4),V@0(@VRAMP)
+    ST    @PAD0,@PAD5
+    AND   >0F,@PAD5
+    MOVE  1,G@HEXES(@PAD4),V@1(@VRAMP)
+    RTN
+
+
+HEXES: BYTE '0','1','Z','3','4','5','6','7'
+  BYTE '8','9','A','B','C','D','E','F'
 
 *----------------------------------------
 * Read grommy2 version, update on screen.
@@ -618,6 +681,40 @@ DENSE_FONT ; Define character cells wihtin 4x8 cell
        ST    @>839B,@>8342                Copy p2.
        MOVE  >0010,@>8340,G@HWIF         Copy from PAD @8340 to GRAM @5FF0. Does this work? Yes!
        RTN
+
+* BIN2HEX assembly routine. Compiled to run from 8302.
+* First item is a vector, so this is good for XML >F0.
+BIN2HEX:
+  DATA >8302    * Vector to 8302
+  DATA >C08B, >D060, >835C, >0941, >06A0
+  DATA >8318   * BL destination address
+  DATA >D060, >835C, >0241, >0F00, >C2C2
+  DATA >0221, >3000, >0281, >3A00, >1A02
+  DATA >0221, >0700, >DBC1, >FFFE, >045B
+
+* 0005 0000 C08B  18   MOV R11,R2
+* 0006 0002 D060  34   MOVB @PAD0,R1
+*      0004 835C     
+* 0007 0006 0941  56   SRL  R1,4
+* 0008 0008 06A0  32   BL   @!
+*      000A 8318    
+* 0009 000C D060  34   MOVB @PAD0,R1
+*      000E 835C     
+* 0010 0010 0241  22   ANDI R1,>0F00
+*      0012 0F00     
+* 0011 0014 C2C2  18   MOV R2,R11
+* 0012               !:
+* 0013 0016 0221  22   AI   R1,'0'*256
+*      0018 3000     
+* 0014 001A 0281  22   CI   R1,('9'+1)*>100
+*      001C 3A00     
+* 0015 001E 1A02  14   JL   !
+* 0016 0020 0221  22   AI   R1,>700
+*      0022 0700     
+* 0017               !
+* 0018 0024 DBC1  38   MOVB  R1,@>FFFE(R15)  write byte to VDP
+*      0026 FFFE     
+* 0019 0028 045B  20   RT
 
 
 *----------------------------------------
