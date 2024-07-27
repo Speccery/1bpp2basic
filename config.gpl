@@ -42,9 +42,11 @@ PAD2    EQU >835E
 PAD3    EQU >835F
 PAD4    EQU >8360
 PAD5    EQU >8361
+INDEX   EQU PAD5
 DUMPA   EQU >8362           ; GROM Dump address
 VRAMP   EQU >8340           ; VRAM ptr overlays GCMDBYTE
 
+DSP     EQU >8372           ; GPL data stack pointer 
 SCANKEY EQU >8375   
 VDPTIMER EQU >8379          ; Incremented by VDP interrupts
 * Hardware interface address
@@ -93,9 +95,9 @@ GPROG
     CLR    @BANK           Actually init from grommy2 
     CLR    @SHADOW         Actually init from grommy2 
 
-    DST   >1234,@XREG
-    DST   >5679,@YREG
-    DST   >DEAD,@ZREG
+    DCLR   @XREG
+    DCLR   @YREG
+    DCLR   @ZREG
 
     CALL G@GVDPSETUP  
 
@@ -359,16 +361,16 @@ DUMPSCREEN:
     HTEX 'GROM DUMPER'
     FEND
 
-    MOVE >002C,G@BIN2HEX,@>8300 ; Move assembly code in place
+    MOVE EBIN2HEX-BIN2HEX,G@BIN2HEX,@>8300 ; Move assembly code in place
 
-; test characters on last line
-    ST  HEXBASECH,@PAD0
-    DST 32*23,@VRAMP          * Beginning of last row
-!   ST  @PAD0,V@0(@VRAMP)
-    DINC @VRAMP
-    INC @PAD0
-    CZ  @PAD0 
-    BR  -!
+* ; test characters on last line 
+*     ST  HEXBASECH,@PAD0
+*     DST 32*23,@VRAMP          * Beginning of last row
+* !   ST  @PAD0,V@0(@VRAMP)
+*     DINC @VRAMP
+*     INC @PAD0
+*     CZ  @PAD0 
+*     BR  -!
 
 
 ; First test in units of frame count (VDPTIMER)
@@ -379,9 +381,9 @@ DUMPSCREEN:
 ;   All GPL with new hex characters, no gap between '9' and 'A': 87 ticks
 ;     This also handles two characers at a time. But still slow.
     .defm DOHEXOUT
-    ;;; XML >F0
+    XML >F0
     ;;;; CALL  HEXOUT1
-    CALL  HEXOUT2
+    ;;; CALL  HEXOUT2
     .endm
 
 **    B  SKIPBENCH
@@ -398,6 +400,7 @@ DUMPSCREEN:
 ** SKIPBENCH:
 
 MAKEDUMP:
+    DST  @YREG,@DUMPA
     CALL G@DODUMP
     ST    ' ',V@VALIDIND
 ; Wait for keypress
@@ -477,6 +480,12 @@ XYZ:
     DADD  2,@VRAMP
     ST    @1(@PAD2),@PAD0  ; Lo byte of reg 
     .DOHEXOUT
+    DSUB  2,@VRAMP          ; Point to beginning of hex digits
+    ST    4,@PAD4           ; 4 digits to edit, VRAMP points to them
+    CALL  EDITHEX           ; go and edit them
+; YREG is used as dump addres. If it changed, refresh screen.
+    DCEQ  @YREG,@DUMPA
+    BR    MAKEDUMP    
     B     G@KW1
 
 
@@ -496,10 +505,10 @@ WAIT0:
     RTN
 
 DKEY1:
-    DSUB  64,@DUMPA
+    DSUB  64,@YREG
     B     MAKEDUMP
 DKEY2:
-    DADD  64,@DUMPA
+    DADD  64,@YREG
     B     MAKEDUMP
 DKEY3:
     ST   ' ',V@VEROFS
@@ -553,6 +562,81 @@ DKEY6ASK:
 DKEY7:
     DST   >0140,@GCMDBYTE+2  ; ARM has different byte order
     BR    DKEY6ASK
+
+*----------------------------------------
+* Edit HEX
+* Number already dsiplayed with E0..EF or F0..FF.
+* Parameters:
+*   VRAMP points to the screen area.
+*   PAD2:PAD3 points to the value.
+*   PAD4 number of digits to edit. Must be even.
+*----------------------------------------
+EDITHEX:
+    CLR  @INDEX   ; current digit index
+EWAIT:
+    SCAN
+    BS   EGOTKEY
+; No key. Flash the cursor pointed at VRAMP by copying bit 4 of frame counter
+; to the character code.
+    ST   @VDPTIMER,@PAD0
+    AND  >10,@PAD0
+    ST   V@0(@VRAMP),@PAD1
+    AND  >EF,@PAD1
+    OR   @PAD1,@PAD0
+    ST  @PAD0,V@0(@VRAMP)
+    INC   V@PATADR
+    B    EWAIT
+
+EGOTKEY:    ; We received a key. If it is '0' - '9' or 'A'-'F' it is a hex digit, thus edit.
+    CGT   '0'-1,@SCANKEY       ; greater than >= 0
+    BR    ENODIGIT             ; No -> ENODIGIT
+    CGT   '9',@SCANKEY         ; Key greater than '9'?
+    BS    CHECKAF
+    SUB   '0',@SCANKEY         ; Here we have '0'-'9' make it 0-9
+GOTDIGIT:
+    ADD   HEXBASECH,@SCANKEY
+    ST    @SCANKEY,V@0(@VRAMP)  ; Store digit into VRAM.
+    DINC  @VRAMP
+    INC   @INDEX
+    CEQ   @INDEX,@PAD4          ; Index=number of digitss?
+    BR    EWAIT                 ; No: get back to waiting next key
+    CALL  BACK2BEGIN
+    B     EWAIT                 ; Wait for next keypress
+
+BACK2BEGIN:
+    AND   >EF,V@0(VRAMP)        ; Yes: make sure no cursor show here.
+    SUB   @INDEX,@VRAMP+1       ; Yes: Reset VRAMP back to beginning of number (BUGBUG: carry not handled!)
+    CLR   @INDEX                ; Reset index
+    RTN
+
+CHECKAF:                        ; Check if we have 'A'..'F'
+    CGT   'A'-1,@SCANKEY        ; >= 'A' ?
+    BR    ENODIGIT              ; no: -> ENODIGIT
+    CGT   'F',@SCANKEY          ; >= 'F' ?
+    BS    ENODIGIT              ; Yes: -> ENODIGIT
+    SUB   'A'-10,@SCANKEY       ; Make 'A' into 10
+    B     GOTDIGIT              ; Display etc.
+
+ENODIGIT:                       ; Here we do not have digit 0-9, A-F
+    CEQ    13,@SCANKEY          ; Is it enter?
+    BR     EWAIT                ; No: get next key
+; Here we have the digits in VRAM. Decode the number.
+    CALL   BACK2BEGIN           ; Reset VRAMP to beginning of number
+!   ST     V@0(@VRAMP),@PAD0    ; Get first digit
+    AND    >0F,@PAD0            ; Low 4 bits are the hex digit
+    SLL    4,@PAD0
+    ST     V@1(VRAMP),@PAD1     ; Get second digit
+    AND    >0F,@PAD1
+    OR     @PAD1,@PAD0          ; Now PAD0 has the byte.
+    ST     @PAD0,@0(@PAD2)      ; Store byte
+    INCT   @INDEX
+    DINC   @PAD2
+    DINCT  @VRAMP
+    CEQ    @INDEX,@PAD4         ; Are we at the end, INDEX==COUNT?
+    BR     -!                   ; No, continue
+    SUB    @INDEX,@PAD3         ; Reset PAD2:PAD3 pointer (BUGBUG no carry)
+    CALL   BACK2BEGIN           ; Reset VRAMP
+    RTN                         ; Done
 
 
 *----------------------------------------
@@ -754,13 +838,45 @@ DENSE_FONT ; Define character cells wihtin 4x8 cell
 * BIN2HEX assembly routine. Compiled to run from 8302.
 * First item is a vector, so this is good for XML >F0.
 BIN2HEX:
-  DATA >8302    * Vector to 8302
-  DATA >C08B, >D060, >835C, >0941, >06A0
-  DATA >8318   * BL destination address
-  DATA >D060, >835C, >0241, >0F00, >C2C2
-  DATA >0221, >3000, >0281, >3A00, >1A02
-  DATA >0221, >0700, >DBC1, >FFFE, >045B
+    DATA >8302
+    DATA >D060, >835C    
+    DATA >0941
+    DATA >0221, >E000
+    DATA >DBC1, >FFFE
+    DATA >D060, >835C    
+    DATA >0241, >0F00
+    DATA >0221, >E000
+    DATA >DBC1, >FFFE
+    DATA >045B
+EBIN2HEX DATA >000 ; dummy
 
+* 0010 8302 D060  34   MOVB @PAD0,R1
+*      8304 835C     
+* 0011 8306 0941  56   SRL  R1,4
+* 0012 8308 0221  22   AI   R1,256*HEXBASECH
+*      830A E000     
+* 0013 830C DBC1  38   MOVB  R1,@>FFFE(R15)  write byte to VDP
+*      830E FFFE     
+* 0014 8310 D060  34   MOVB @PAD0,R1
+*      8312 835C     
+* 0015 8314 0241  22   ANDI R1,>0F00
+*      8316 0F00     
+* 0016 8318 0221  22   AI   R1,256*HEXBASECH
+*      831A E000     
+* 0017 831C DBC1  38   MOVB  R1,@>FFFE(R15)  write byte to VDP
+*      831E FFFE     
+* 0018 8320 045B  20   RT
+
+
+
+
+* Old version
+*  DATA >8302    * Vector to 8302
+*  DATA >C08B, >D060, >835C, >0941, >06A0
+*  DATA >8318   * BL destination address
+*  DATA >D060, >835C, >0241, >0F00, >C2C2
+*  DATA >0221, >3000, >0281, >3A00, >1A02
+*  DATA >0221, >0700, >DBC1, >FFFE, >045B
 * 0005 0000 C08B  18   MOV R11,R2
 * 0006 0002 D060  34   MOVB @PAD0,R1
 *      0004 835C     
