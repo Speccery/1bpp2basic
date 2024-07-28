@@ -17,6 +17,7 @@ LAYOUTVER EQU 5         Row for Version number
 LAYOUTBAN EQU 8        Row for selected bank display
 VEROFS    EQU 32*LAYOUTVER
 VALIDIND  EQU VEROFS-29         ; Indicator for valid command
+VRAMDUMPAREA EQU VEROFS+224+32
 
 * A few variables for the grommy2 config to use.
 * I am not sure if these are free to use, but I will try :) 
@@ -200,7 +201,8 @@ PATADR EQU >0800+(8*ALIVECH)
 
     CALL  SHOW_VERSION      ; Get version, bank, shadow info
     B     GUPDATE           ; update screen
-
+MAINSEL:
+    CALL  CLEARVALID
 GWAIT
     SCAN
     BS    GOTKEY
@@ -212,7 +214,6 @@ GWAIT
 
 GOTKEY:
     ST    @SCANKEY,V@VEROFS-30  ; Make key visible.
-    CALL  CLEARVALID
     CGT   '0'-1,@SCANKEY       greater than >= 0
     BR    GG01              no skip forward
     CGT   '9',@SCANKEY        Key greater than '9'?
@@ -275,7 +276,7 @@ KEY7:                       ; Flash GRAM to user bank 2
 KEY8
     ST    '*',V@VALIDIND    ; Command valid indicator
     CALL  SHOW_VERSION
-    BR    GWAIT
+    BR    MAINSEL
 KEY9: 
     B   DUMPSCREEN
 
@@ -329,7 +330,7 @@ BANKOFS EQU (32*LAYOUTBAN)+4
     DSLL 5,@PAD2          Shift by 5 to get 32 chars per line
     ST  '*',V@BANKOFS(@PAD2)   Screen offset 102
 * End update GROM read bank.    
-    B   G@GWAIT
+    B   G@MAINSEL
 
 *----------------------------------------
 * Second screen with a few features.
@@ -349,19 +350,19 @@ DUMPSCREEN:
     HTEX '5 COPY 24K GROM 8000 TO GRAM'
     ROW+ >01
     COL LALIGN
-    HTEX '6 ARM EXECUTE 0000'
+    HTEX '6 ARM EXECUTE X'
     ROW+ >01
     COL LALIGN
     HTEX '7 ARM EXECUTE 4000'
     ROW+ >01
     COL LALIGN
     HTEX '0 BURN FIRMWARE FROM GRAM'
-    ROW+ >02
+    ROW+ >01
     COL LALIGN
-    HTEX 'GROM DUMPER'
+    HTEX 'X Y Z: EDIT VAR X, Y OR Z'
     FEND
 
-    MOVE EBIN2HEX-BIN2HEX,G@BIN2HEX,@>8300 ; Move assembly code in place
+    MOVE BINLEN,G@BINDATA,@>8300 ; Move assembly code in place
 
 * ; test characters on last line 
 *     ST  HEXBASECH,@PAD0
@@ -429,7 +430,7 @@ DGOTKEY:
     BR    DKEY7
 
 DODUMP:
-    DST   VEROFS+224,@VRAMP
+    DST   VRAMDUMPAREA,@VRAMP
     CLR   @PAD2             ; Row counter
     ST    '*',V@VALIDIND
 DUMP2:    
@@ -532,8 +533,11 @@ DKEY0:      ; Burn to Flash
 DKEY4:      ; Command to fill GRAM with >FF, all 24K
     DST   >FFFF,@PAD2   ; Fill value, 2 bytes
     ST    '*',V@VALIDIND    ; Command valid indicator   
-    MOVE  >1,@PAD2,G@>0
-    MOVE  >5FFF,G@>0,G@>1
+    DCLR  @PAD4
+!   MOVE  2,@PAD2,G@0(@PAD4)    ; store to grom
+    DINCT @PAD4
+    DCEQ  >6000,@PAD4
+    BR    -!
     CALL  CLEARVALID
     B     MAKEDUMP
 
@@ -545,8 +549,10 @@ DKEY5:
     CALL  CLEARVALID
     B     MAKEDUMP
 
-DKEY6:      ; ARM execute 0000
-    DST   >0100,@GCMDBYTE+2   ; thumb bit high
+DKEY6:      ; ARM execute at address X 
+    DST   @XREG,@PAD0
+    OR    >0100,@PAD0
+    DST   @PAD0,@GCMDBYTE+2   ; thumb bit high
 DKEY6ASK:
     CALL  G@ASKCONFIRM
     CEQ   '1',@SCANKEY       is the key one?
@@ -843,72 +849,7 @@ DENSE_FONT ; Define character cells wihtin 4x8 cell
        MOVE  >0010,@>8340,G@HWIF         Copy from PAD @8340 to GRAM @5FF0. Does this work? Yes!
        RTN
 
-* BIN2HEX assembly routine. Compiled to run from 8302.
-* First item is a vector, so this is good for XML >F0.
-BIN2HEX:
-    DATA >8302
-    DATA >D060, >835C    
-    DATA >0941
-    DATA >0221, >E000
-    DATA >DBC1, >FFFE
-    DATA >D060, >835C    
-    DATA >0241, >0F00
-    DATA >0221, >E000
-    DATA >DBC1, >FFFE
-    DATA >045B
-EBIN2HEX DATA >000 ; dummy
-
-* 0010 8302 D060  34   MOVB @PAD0,R1
-*      8304 835C     
-* 0011 8306 0941  56   SRL  R1,4
-* 0012 8308 0221  22   AI   R1,256*HEXBASECH
-*      830A E000     
-* 0013 830C DBC1  38   MOVB  R1,@>FFFE(R15)  write byte to VDP
-*      830E FFFE     
-* 0014 8310 D060  34   MOVB @PAD0,R1
-*      8312 835C     
-* 0015 8314 0241  22   ANDI R1,>0F00
-*      8316 0F00     
-* 0016 8318 0221  22   AI   R1,256*HEXBASECH
-*      831A E000     
-* 0017 831C DBC1  38   MOVB  R1,@>FFFE(R15)  write byte to VDP
-*      831E FFFE     
-* 0018 8320 045B  20   RT
-
-
-
-
-* Old version
-*  DATA >8302    * Vector to 8302
-*  DATA >C08B, >D060, >835C, >0941, >06A0
-*  DATA >8318   * BL destination address
-*  DATA >D060, >835C, >0241, >0F00, >C2C2
-*  DATA >0221, >3000, >0281, >3A00, >1A02
-*  DATA >0221, >0700, >DBC1, >FFFE, >045B
-* 0005 0000 C08B  18   MOV R11,R2
-* 0006 0002 D060  34   MOVB @PAD0,R1
-*      0004 835C     
-* 0007 0006 0941  56   SRL  R1,4
-* 0008 0008 06A0  32   BL   @!
-*      000A 8318    
-* 0009 000C D060  34   MOVB @PAD0,R1
-*      000E 835C     
-* 0010 0010 0241  22   ANDI R1,>0F00
-*      0012 0F00     
-* 0011 0014 C2C2  18   MOV R2,R11
-* 0012               !:
-* 0013 0016 0221  22   AI   R1,'0'*256
-*      0018 3000     
-* 0014 001A 0281  22   CI   R1,('9'+1)*>100
-*      001C 3A00     
-* 0015 001E 1A02  14   JL   !
-* 0016 0020 0221  22   AI   R1,>700
-*      0022 0700     
-* 0017               !
-* 0018 0024 DBC1  38   MOVB  R1,@>FFFE(R15)  write byte to VDP
-*      0026 FFFE     
-* 0019 0028 045B  20   RT
-
+    copy 'bin2hex.gpl'
 
 *----------------------------------------
 * VDP setup for module
