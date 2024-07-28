@@ -212,7 +212,7 @@ GWAIT
 
 GOTKEY:
     ST    @SCANKEY,V@VEROFS-30  ; Make key visible.
-    ST    ' ',V@VALIDIND        ; Assume invalid CMD  
+    CALL  CLEARVALID
     CGT   '0'-1,@SCANKEY       greater than >= 0
     BR    GG01              no skip forward
     CGT   '9',@SCANKEY        Key greater than '9'?
@@ -402,7 +402,7 @@ DUMPSCREEN:
 MAKEDUMP:
     DST  @YREG,@DUMPA
     CALL G@DODUMP
-    ST    ' ',V@VALIDIND
+    CALL  CLEARVALID
 ; Wait for keypress
 KW1:    
     SCAN
@@ -534,7 +534,7 @@ DKEY4:      ; Command to fill GRAM with >FF, all 24K
     ST    '*',V@VALIDIND    ; Command valid indicator   
     MOVE  >1,@PAD2,G@>0
     MOVE  >5FFF,G@>0,G@>1
-    ST    ' ',V@VALIDIND    ; Command valid indicator   
+    CALL  CLEARVALID
     B     MAKEDUMP
 
 DKEY5:
@@ -542,7 +542,7 @@ DKEY5:
     MOVE >2000,G@>8000,G@>0000
     MOVE >2000,G@>A000,G@>2000
     MOVE >2000,G@>C000,G@>4000
-    ST    ' ',V@VALIDIND    ; Command valid indicator   
+    CALL  CLEARVALID
     B     MAKEDUMP
 
 DKEY6:      ; ARM execute 0000
@@ -562,6 +562,14 @@ DKEY6ASK:
 DKEY7:
     DST   >0140,@GCMDBYTE+2  ; ARM has different byte order
     BR    DKEY6ASK
+
+*----------------------------------------
+CLEARVALID:
+    ST    ' ',V@VALIDIND
+    ST    ' ',V@VALIDIND+1
+    ST    ' ',V@VALIDIND+2
+    ST    ' ',V@VALIDIND+3
+    RTN
 
 *----------------------------------------
 * Edit HEX
