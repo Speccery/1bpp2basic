@@ -2181,7 +2181,7 @@ XGA99 CROSS-ASSEMBLER   VERSION 3.0.1
 0852              copy 'bin2hex.gpl'
               > bin2hex.gpl
 0001          * bin2gpl.py output to bin2hex.gpl
-0002          * Sun Jul 28 09:13:54 2024
+0002          * Sun Jul 28 10:43:06 2024
 0003          * Binary data
 0004          BINDATA:
 0005 6746 83    DATA >8302
