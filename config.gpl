@@ -386,7 +386,7 @@ DUMPSCREEN:
     ;;; CALL  HEXOUT2
     .endm
 
-**    B  SKIPBENCH
+    B  SKIPBENCH
 ; Run benchmark
     ST    4,@XREG               ; Loop counter
     ST    @VDPTIMER,@XREG+1     ; Read timer
@@ -397,7 +397,8 @@ DUMPSCREEN:
     BR   -!
     ST    @VDPTIMER,@XREG       ; Read timer
     DSUB  4*10,@DUMPA
-** SKIPBENCH:
+SKIPBENCH:
+    B     MAKEDUMP      ; NOP
 
 MAKEDUMP:
     DST  @YREG,@DUMPA

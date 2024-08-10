@@ -157,11 +157,11 @@ XGA99 CROSS-ASSEMBLER   VERSION 3.0.1
 0102          
 0103 6056 06      CALL G@GVDPSETUP
      6057 67  
-     6058 A3
+     6058 A9
 0104          
 0105 6059 06      CALL G@G_SCR1       ; Setup the screen which was automatically generated
      605A 6A  
-     605B 8E
+     605B 94
 0106          * Setup additional chars E0..EF as numbers 0..9 and A..F
 0107          * 0x980 = hex(0x800+ord('0')*8)
 0108          * 0xa08 = hex(0x800+ord('A')*8)
@@ -612,14 +612,14 @@ XGA99 CROSS-ASSEMBLER   VERSION 3.0.1
 0198          
 0199 61FA 06      CALL  SHOW_VERSION      ; Get version, bank, shadow info
      61FB 66  
-     61FC 9C
+     61FC A2
 0200 61FD 05      B     GUPDATE           ; update screen
      61FE 62  
      61FF B3
 0201          MAINSEL:
 0202 6200 06      CALL  CLEARVALID
      6201 65  
-     6202 6F
+     6202 75
 0203          GWAIT
 0204 6203 03      SCAN
 0205 6204 62      BS    MGOTKEY
@@ -688,7 +688,7 @@ XGA99 CROSS-ASSEMBLER   VERSION 3.0.1
      623D 75  
      623E 50  
 0235 623F 66      BS    PAGINGSCREEN
-     6240 60  
+     6240 66  
 0236 6241 CE      CGT   'A'-1,@SCANKEY
      6242 75  
      6243 40  
@@ -814,14 +814,14 @@ XGA99 CROSS-ASSEMBLER   VERSION 3.0.1
      62A2 08
      62A3 48  
      62A4 67  
-     62A5 1D
+     62A5 23
 0299 62A6 BE      ST    '*',V@VALIDIND    ; Command valid indicator
      62A7 A0  
      62A8 83
      62A9 2A  
 0300 62AA 06      CALL  GSENDCMD          ; Send command to HW
      62AB 67  
-     62AC 08
+     62AC 0E
 0301          
 0302          GG01:
 0303 62AD D6      CEQ   >0F,@SCANKEY       is it Fctn-9?
@@ -1108,7 +1108,7 @@ XGA99 CROSS-ASSEMBLER   VERSION 3.0.1
      63B5 22
      63B6 00  
      63B7 67  
-     63B8 81
+     63B8 87
 0365          
 0366          * ; test characters on last line
 0367          *     ST  HEXBASECH,@PAD0
@@ -1128,1978 +1128,1983 @@ XGA99 CROSS-ASSEMBLER   VERSION 3.0.1
 0381          ;   All GPL with new hex characters, no gap between '9' and 'A': 87 ticks
 0382          ;     This also handles two characers at a time. But still slow.
 0388          
-0389          **    B  SKIPBENCH
+0389 63B9 05      B  SKIPBENCH
+     63BA 63  
+     63BB D6
 0390          ; Run benchmark
-0391 63B9 BE      ST    4,@XREG               ; Loop counter
-     63BA 2C  
-     63BB 04  
-0392 63BC BC      ST    @VDPTIMER,@XREG+1     ; Read timer
-     63BD 2D  
-     63BE 79  
-0393 63BF 06  !   CALL  G@DODUMP
-     63C0 64  
-     63C1 0D
-0394 63C2 A3      DADD  8,@DUMPA
-     63C3 62  
-     63C4 00  
-     63C5 08
-0395 63C6 92      DEC   @XREG
-     63C7 2C  
-0396 63C8 8E      CZ    @XREG
-     63C9 2C  
-0397 63CA 43      BR   -!
-     63CB BF  
-0398 63CC BC      ST    @VDPTIMER,@XREG       ; Read timer
-     63CD 2C  
-     63CE 79  
-0399 63CF A7      DSUB  4*10,@DUMPA
-     63D0 62  
-     63D1 00  
-     63D2 28
-0400          ** SKIPBENCH:
-0401          
-0402          MAKEDUMP:
-0403 63D3 BD      DST  @YREG,@DUMPA
-     63D4 62  
-     63D5 2E  
-0404 63D6 06      CALL G@DODUMP
-     63D7 64  
-     63D8 0D
-0405 63D9 06      CALL  CLEARVALID
-     63DA 65  
-     63DB 6F
-0406          ; Wait for keypress
-0407          KW1:
-0408 63DC 03      SCAN
-0409 63DD 63      BS    DGOTKEY
-     63DE E5  
-0410 63DF 90      INC   V@PATADR
-     63E0 AE  
-     63E1 F8
-0411 63E2 05      B     KW1
-     63E3 63  
-     63E4 DC
-0412          DGOTKEY:
-0413 63E5 BC      ST    @SCANKEY,V@VEROFS-30  ; Make key visible.
-     63E6 A0  
-     63E7 82
-     63E8 75  
-0414 63E9 CE      CGT   'X'-1,@SCANKEY    ; Key >= 'X'
-     63EA 75  
-     63EB 57  
-0415 63EC 64      BS    XYZ               ; Yes: go to XYZ
-     63ED 65  
-0416 63EE CE      CGT   '0'-1,@SCANKEY
-     63EF 75  
-     63F0 2F  
-0417 63F1 43      BR    KW1               ; Key less than zero -> loop
-     63F2 DC  
-0418 63F3 CE      CGT   '7',@SCANKEY      ; Key over '7' -> loop
-     63F4 75  
-     63F5 37  
-0419 63F6 63      BS    KW1
-     63F7 DC  
-0420 63F8 A6      SUB   '0',@SCANKEY
-     63F9 75  
-     63FA 30  
-0421 63FB 8A      CASE  @SCANKEY
-     63FC 75  
-0422 63FD 44      BR    DKEY0
-     63FE EB  
-0423 63FF 44      BR    DKEY1
-     6400 CF  
-0424 6401 44      BR    DKEY2
-     6402 D6  
-0425 6403 44      BR    DKEY3
-     6404 DD  
-0426 6405 45      BR    DKEY4
-     6406 0A  
-0427 6407 45      BR    DKEY5
-     6408 29  
-0428 6409 45      BR    DKEY6
-     640A 48  
-0429 640B 45      BR    DKEY7
-     640C 69  
-0430          
-0431          DODUMP:
-0432 640D BF      DST   VRAMDUMPAREA,@VRAMP
-     640E 40  
-     640F 01  
-     6410 A0
-0433 6411 86      CLR   @PAD2             ; Row counter
-     6412 5E  
-0434 6413 BE      ST    '*',V@VALIDIND
-     6414 A0  
-     6415 83
-     6416 2A  
-0435          DUMP2:
-0436 6417 BE      ST    ' ',V@>FFFF(VRAMP)    ; setup VRAM address in case assembly used
-     6418 EF  
-     6419 FF
-     641A FF
-     641B 40
-     641C 20  
-0437 641D BC      ST    @DUMPA,@PAD0      ; Hi byte off address
-     641E 5C  
-     641F 62  
-0001 6420 0F      XML >F0
-     6421 F0  
+0391 63BC BE      ST    4,@XREG               ; Loop counter
+     63BD 2C  
+     63BE 04  
+0392 63BF BC      ST    @VDPTIMER,@XREG+1     ; Read timer
+     63C0 2D  
+     63C1 79  
+0393 63C2 06  !   CALL  G@DODUMP
+     63C3 64  
+     63C4 13
+0394 63C5 A3      DADD  8,@DUMPA
+     63C6 62  
+     63C7 00  
+     63C8 08
+0395 63C9 92      DEC   @XREG
+     63CA 2C  
+0396 63CB 8E      CZ    @XREG
+     63CC 2C  
+0397 63CD 43      BR   -!
+     63CE C2  
+0398 63CF BC      ST    @VDPTIMER,@XREG       ; Read timer
+     63D0 2C  
+     63D1 79  
+0399 63D2 A7      DSUB  4*10,@DUMPA
+     63D3 62  
+     63D4 00  
+     63D5 28
+0400          SKIPBENCH:
+0401 63D6 05      B     MAKEDUMP      ; NOP
+     63D7 63  
+     63D8 D9
+0402          
+0403          MAKEDUMP:
+0404 63D9 BD      DST  @YREG,@DUMPA
+     63DA 62  
+     63DB 2E  
+0405 63DC 06      CALL G@DODUMP
+     63DD 64  
+     63DE 13
+0406 63DF 06      CALL  CLEARVALID
+     63E0 65  
+     63E1 75
+0407          ; Wait for keypress
+0408          KW1:
+0409 63E2 03      SCAN
+0410 63E3 63      BS    DGOTKEY
+     63E4 EB  
+0411 63E5 90      INC   V@PATADR
+     63E6 AE  
+     63E7 F8
+0412 63E8 05      B     KW1
+     63E9 63  
+     63EA E2
+0413          DGOTKEY:
+0414 63EB BC      ST    @SCANKEY,V@VEROFS-30  ; Make key visible.
+     63EC A0  
+     63ED 82
+     63EE 75  
+0415 63EF CE      CGT   'X'-1,@SCANKEY    ; Key >= 'X'
+     63F0 75  
+     63F1 57  
+0416 63F2 64      BS    XYZ               ; Yes: go to XYZ
+     63F3 6B  
+0417 63F4 CE      CGT   '0'-1,@SCANKEY
+     63F5 75  
+     63F6 2F  
+0418 63F7 43      BR    KW1               ; Key less than zero -> loop
+     63F8 E2  
+0419 63F9 CE      CGT   '7',@SCANKEY      ; Key over '7' -> loop
+     63FA 75  
+     63FB 37  
+0420 63FC 63      BS    KW1
+     63FD E2  
+0421 63FE A6      SUB   '0',@SCANKEY
+     63FF 75  
+     6400 30  
+0422 6401 8A      CASE  @SCANKEY
+     6402 75  
+0423 6403 44      BR    DKEY0
+     6404 F1  
+0424 6405 44      BR    DKEY1
+     6406 D5  
+0425 6407 44      BR    DKEY2
+     6408 DC  
+0426 6409 44      BR    DKEY3
+     640A E3  
+0427 640B 45      BR    DKEY4
+     640C 10  
+0428 640D 45      BR    DKEY5
+     640E 2F  
+0429 640F 45      BR    DKEY6
+     6410 4E  
+0430 6411 45      BR    DKEY7
+     6412 6F  
+0431          
+0432          DODUMP:
+0433 6413 BF      DST   VRAMDUMPAREA,@VRAMP
+     6414 40  
+     6415 01  
+     6416 A0
+0434 6417 86      CLR   @PAD2             ; Row counter
+     6418 5E  
+0435 6419 BE      ST    '*',V@VALIDIND
+     641A A0  
+     641B 83
+     641C 2A  
+0436          DUMP2:
+0437 641D BE      ST    ' ',V@>FFFF(VRAMP)    ; setup VRAM address in case assembly used
+     641E EF  
+     641F FF
+     6420 FF
+     6421 40
+     6422 20  
+0438 6423 BC      ST    @DUMPA,@PAD0      ; Hi byte off address
+     6424 5C  
+     6425 62  
+0001 6426 0F      XML >F0
+     6427 F0  
 0002              ;;;; CALL  HEXOUT1
 0003              ;;; CALL  HEXOUT2
-0439 6422 A3      DADD  2,@VRAMP
-     6423 40  
-     6424 00  
-     6425 02
-0440 6426 BC      ST    @DUMPA+1,@PAD0    ; Lo byte off address
-     6427 5C  
-     6428 63  
-0001 6429 0F      XML >F0
-     642A F0  
+0440 6428 A3      DADD  2,@VRAMP
+     6429 40  
+     642A 00  
+     642B 02
+0441 642C BC      ST    @DUMPA+1,@PAD0    ; Lo byte off address
+     642D 5C  
+     642E 63  
+0001 642F 0F      XML >F0
+     6430 F0  
 0002              ;;;; CALL  HEXOUT1
 0003              ;;; CALL  HEXOUT2
-0442 642B BE      ST    ':',V@2(@VRAMP)
-     642C E0  
-     642D 02
-     642E 40
-     642F 3A  
-0443 6430 A3      DADD  3,@VRAMP
-     6431 40  
-     6432 00  
-     6433 03
-0444 6434 86      CLR   @PAD1             ; column counter
-     6435 5D  
-0445          ; Dump 8 bytes from from 16 bit ptr  DUMPA
-0446          DUMP1:
-0447 6436 33      MOVE  1,G@0(@DUMPA),@PAD0    ; Read from GROM pointed to by DUMPA
-     6437 00  
-     6438 01
-     6439 5C  
-     643A 00  
-     643B 00
-     643C 62
-0001 643D 0F      XML >F0
-     643E F0  
+0443 6431 BE      ST    ':',V@2(@VRAMP)
+     6432 E0  
+     6433 02
+     6434 40
+     6435 3A  
+0444 6436 A3      DADD  3,@VRAMP
+     6437 40  
+     6438 00  
+     6439 03
+0445 643A 86      CLR   @PAD1             ; column counter
+     643B 5D  
+0446          ; Dump 8 bytes from from 16 bit ptr  DUMPA
+0447          DUMP1:
+0448 643C 33      MOVE  1,G@0(@DUMPA),@PAD0    ; Read from GROM pointed to by DUMPA
+     643D 00  
+     643E 01
+     643F 5C  
+     6440 00  
+     6441 00
+     6442 62
+0001 6443 0F      XML >F0
+     6444 F0  
 0002              ;;;; CALL  HEXOUT1
 0003              ;;; CALL  HEXOUT2
-0449 643F BE      ST    ' ',V@2(@VRAMP)
-     6440 E0  
-     6441 02
-     6442 40
-     6443 20  
-0450 6444 A3      DADD  3,@VRAMP
-     6445 40  
-     6446 00  
-     6447 03
-0451 6448 91      DINC  @DUMPA
-     6449 62  
-0452 644A 90      INC   @PAD1
-     644B 5D  
-0453 644C D6      CEQ   8,@PAD1           ; 8 columns - are we done?
-     644D 5D  
-     644E 08  
-0454 644F 44      BR    DUMP1             ; No: jump to dump1
-     6450 36  
-0455          ; Advance VRAM pointer, we add and mask to bring pointer to beginning
-0456          ; of next line.
-0457 6451 A3      DADD  >1F,@VRAMP
-     6452 40  
-     6453 00  
-     6454 1F
-0458 6455 B3      DAND  >0FE0,@VRAMP
-     6456 40  
-     6457 0F  
-     6458 E0
-0459 6459 90      INC   @PAD2             ; inc Row
-     645A 5E  
-0460 645B D6      CEQ   8,@PAD2           ; Done with 8 rows?
-     645C 5E  
-     645D 08  
-0461 645E 44      BR    DUMP2             ; No: jump to dump2
-     645F 17  
-0462 6460 A7      DSUB  8*8,@DUMPA           ; Undo the incs in the loop above
-     6461 62  
-     6462 00  
-     6463 40
-0463 6464 00      RTN
-0464          
-0465          ; Check if we have button X Y Z pressed
-0466          XYZ:
-0467 6465 CE      CGT   'Z',@SCANKEY    ; Above Z?
-     6466 75  
-     6467 5A  
-0468 6468 63      BS    KW1             ; Yes: KW1
-     6469 DC  
-0469          ; Ok now we need to ask the user for a value and store it to X, Y or Z register.
-0470          ; Show the current value of the variable after character code
-0471 646A BF      DST   VEROFS-29,@VRAMP ; Location in VRAM
-     646B 40  
-     646C 00  
-     646D 83
-0472 646E BC      ST    @SCANKEY,@PAD3
-     646F 5F  
-     6470 75  
-0473 6471 A6      SUB   'X',@PAD3       ; Now pad is 0,1,2 for X,Y,Z
-     6472 5F  
-     6473 58  
-0474 6474 E2      SLL   1,@PAD3         ; Multiply by 2
+0450 6445 BE      ST    ' ',V@2(@VRAMP)
+     6446 E0  
+     6447 02
+     6448 40
+     6449 20  
+0451 644A A3      DADD  3,@VRAMP
+     644B 40  
+     644C 00  
+     644D 03
+0452 644E 91      DINC  @DUMPA
+     644F 62  
+0453 6450 90      INC   @PAD1
+     6451 5D  
+0454 6452 D6      CEQ   8,@PAD1           ; 8 columns - are we done?
+     6453 5D  
+     6454 08  
+0455 6455 44      BR    DUMP1             ; No: jump to dump1
+     6456 3C  
+0456          ; Advance VRAM pointer, we add and mask to bring pointer to beginning
+0457          ; of next line.
+0458 6457 A3      DADD  >1F,@VRAMP
+     6458 40  
+     6459 00  
+     645A 1F
+0459 645B B3      DAND  >0FE0,@VRAMP
+     645C 40  
+     645D 0F  
+     645E E0
+0460 645F 90      INC   @PAD2             ; inc Row
+     6460 5E  
+0461 6461 D6      CEQ   8,@PAD2           ; Done with 8 rows?
+     6462 5E  
+     6463 08  
+0462 6464 44      BR    DUMP2             ; No: jump to dump2
+     6465 1D  
+0463 6466 A7      DSUB  8*8,@DUMPA           ; Undo the incs in the loop above
+     6467 62  
+     6468 00  
+     6469 40
+0464 646A 00      RTN
+0465          
+0466          ; Check if we have button X Y Z pressed
+0467          XYZ:
+0468 646B CE      CGT   'Z',@SCANKEY    ; Above Z?
+     646C 75  
+     646D 5A  
+0469 646E 63      BS    KW1             ; Yes: KW1
+     646F E2  
+0470          ; Ok now we need to ask the user for a value and store it to X, Y or Z register.
+0471          ; Show the current value of the variable after character code
+0472 6470 BF      DST   VEROFS-29,@VRAMP ; Location in VRAM
+     6471 40  
+     6472 00  
+     6473 83
+0473 6474 BC      ST    @SCANKEY,@PAD3
      6475 5F  
-     6476 01  
-0475 6477 86      CLR   @PAD2           ; clear high byte
-     6478 5E  
-0476 6479 A3      DADD  XREG,@PAD2       ; Add address of XREG, now PAD1:PAD2 is a pointer to value
-     647A 5E  
-     647B 83  
-     647C 2C
-0477          
-0478 647D BC      ST    @0(@PAD2),@PAD0  ; Hi byte of reg
-     647E 5C  
-     647F CF  
-     6480 7D
-     6481 00
-     6482 5E
-0001 6483 0F      XML >F0
-     6484 F0  
+     6476 75  
+0474 6477 A6      SUB   'X',@PAD3       ; Now pad is 0,1,2 for X,Y,Z
+     6478 5F  
+     6479 58  
+0475 647A E2      SLL   1,@PAD3         ; Multiply by 2
+     647B 5F  
+     647C 01  
+0476 647D 86      CLR   @PAD2           ; clear high byte
+     647E 5E  
+0477 647F A3      DADD  XREG,@PAD2       ; Add address of XREG, now PAD1:PAD2 is a pointer to value
+     6480 5E  
+     6481 83  
+     6482 2C
+0478          
+0479 6483 BC      ST    @0(@PAD2),@PAD0  ; Hi byte of reg
+     6484 5C  
+     6485 CF  
+     6486 7D
+     6487 00
+     6488 5E
+0001 6489 0F      XML >F0
+     648A F0  
 0002              ;;;; CALL  HEXOUT1
 0003              ;;; CALL  HEXOUT2
-0480 6485 A3      DADD  2,@VRAMP
-     6486 40  
-     6487 00  
-     6488 02
-0481 6489 BC      ST    @1(@PAD2),@PAD0  ; Lo byte of reg
-     648A 5C  
-     648B CF  
-     648C 7D
-     648D 01
-     648E 5E
-0001 648F 0F      XML >F0
-     6490 F0  
+0481 648B A3      DADD  2,@VRAMP
+     648C 40  
+     648D 00  
+     648E 02
+0482 648F BC      ST    @1(@PAD2),@PAD0  ; Lo byte of reg
+     6490 5C  
+     6491 CF  
+     6492 7D
+     6493 01
+     6494 5E
+0001 6495 0F      XML >F0
+     6496 F0  
 0002              ;;;; CALL  HEXOUT1
 0003              ;;; CALL  HEXOUT2
-0483 6491 A7      DSUB  2,@VRAMP          ; Point to beginning of hex digits
-     6492 40  
-     6493 00  
-     6494 02
-0484 6495 BE      ST    4,@PAD4           ; 4 digits to edit, VRAMP points to them
-     6496 60  
-     6497 04  
-0485 6498 06      CALL  EDITHEX           ; go and edit them
-     6499 65  
-     649A 80
-0486          ; YREG is used as dump addres. If it changed, refresh screen.
-0487 649B D5      DCEQ  @YREG,@DUMPA
-     649C 62  
-     649D 2E  
-0488 649E 43      BR    MAKEDUMP
-     649F D3  
-0489 64A0 05      B     G@KW1
-     64A1 63  
-     64A2 DC
-0490          
+0484 6497 A7      DSUB  2,@VRAMP          ; Point to beginning of hex digits
+     6498 40  
+     6499 00  
+     649A 02
+0485 649B BE      ST    4,@PAD4           ; 4 digits to edit, VRAMP points to them
+     649C 60  
+     649D 04  
+0486 649E 06      CALL  EDITHEX           ; go and edit them
+     649F 65  
+     64A0 86
+0487          ; YREG is used as dump addres. If it changed, refresh screen.
+0488 64A1 D5      DCEQ  @YREG,@DUMPA
+     64A2 62  
+     64A3 2E  
+0489 64A4 43      BR    MAKEDUMP
+     64A5 D9  
+0490 64A6 05      B     G@KW1
+     64A7 63  
+     64A8 E2
 0491          
 0492          
-0493          ASKCONFIRM:
-0494          ; Ask for confirmation. Clear a few rows to clarify
-0495 64A3 BE      ST   ' ',V@VEROFS
-     64A4 A0  
-     64A5 A0
-     64A6 20  
-0496 64A7 35      MOVE 768-VEROFS-1,V@VEROFS,V@VEROFS+1   ; Clear screen bottom
-     64A8 02  
-     64A9 5F
+0493          
+0494          ASKCONFIRM:
+0495          ; Ask for confirmation. Clear a few rows to clarify
+0496 64A9 BE      ST   ' ',V@VEROFS
      64AA A0  
-     64AB A1
-     64AC A0  
-     64AD A0
-0497 64AE 08      FMT
-0498 64AF FF      COL LALIGN
-     64B0 02  
-0499 64B1 FE      ROW LAYOUTVER
-     64B2 05  
-0500 64B3 15      HTEX '!!PRESS 1 TO CONFIRM!!'
-     64B4 21  
-     64B5 21  
-     64B6 50  
-     64B7 52  
-     64B8 45  
-     64B9 53  
-     64BA 53  
-     64BB 20  
-     64BC 31  
-     64BD 20  
-     64BE 54  
-     64BF 4F  
-     64C0 20  
-     64C1 43  
-     64C2 4F  
-     64C3 4E  
-     64C4 46  
-     64C5 49  
-     64C6 52  
-     64C7 4D  
-     64C8 21  
-     64C9 21  
-0501 64CA FB      FEND
-0502          WAIT0:
-0503 64CB 03      SCAN
-0504 64CC 44      BR    WAIT0
-     64CD CB  
-0505 64CE 00      RTN
-0506          
-0507          DKEY1:
-0508 64CF A7      DSUB  64,@YREG
-     64D0 2E  
-     64D1 00  
-     64D2 40
-0509 64D3 05      B     MAKEDUMP
-     64D4 63  
-     64D5 D3
-0510          DKEY2:
-0511 64D6 A3      DADD  64,@YREG
-     64D7 2E  
-     64D8 00  
-     64D9 40
-0512 64DA 05      B     MAKEDUMP
-     64DB 63  
-     64DC D3
-0513          DKEY3:
-0514 64DD BE      ST   ' ',V@VEROFS
-     64DE A0  
-     64DF A0
-     64E0 20  
-0515 64E1 35      MOVE 768-VEROFS-1,V@VEROFS,V@VEROFS+1   ; Clear screen bottom
-     64E2 02  
-     64E3 5F
+     64AB A0
+     64AC 20  
+0497 64AD 35      MOVE 768-VEROFS-1,V@VEROFS,V@VEROFS+1   ; Clear screen bottom
+     64AE 02  
+     64AF 5F
+     64B0 A0  
+     64B1 A1
+     64B2 A0  
+     64B3 A0
+0498 64B4 08      FMT
+0499 64B5 FF      COL LALIGN
+     64B6 02  
+0500 64B7 FE      ROW LAYOUTVER
+     64B8 05  
+0501 64B9 15      HTEX '!!PRESS 1 TO CONFIRM!!'
+     64BA 21  
+     64BB 21  
+     64BC 50  
+     64BD 52  
+     64BE 45  
+     64BF 53  
+     64C0 53  
+     64C1 20  
+     64C2 31  
+     64C3 20  
+     64C4 54  
+     64C5 4F  
+     64C6 20  
+     64C7 43  
+     64C8 4F  
+     64C9 4E  
+     64CA 46  
+     64CB 49  
+     64CC 52  
+     64CD 4D  
+     64CE 21  
+     64CF 21  
+0502 64D0 FB      FEND
+0503          WAIT0:
+0504 64D1 03      SCAN
+0505 64D2 44      BR    WAIT0
+     64D3 D1  
+0506 64D4 00      RTN
+0507          
+0508          DKEY1:
+0509 64D5 A7      DSUB  64,@YREG
+     64D6 2E  
+     64D7 00  
+     64D8 40
+0510 64D9 05      B     MAKEDUMP
+     64DA 63  
+     64DB D9
+0511          DKEY2:
+0512 64DC A3      DADD  64,@YREG
+     64DD 2E  
+     64DE 00  
+     64DF 40
+0513 64E0 05      B     MAKEDUMP
+     64E1 63  
+     64E2 D9
+0514          DKEY3:
+0515 64E3 BE      ST   ' ',V@VEROFS
      64E4 A0  
-     64E5 A1
-     64E6 A0  
-     64E7 A0
-0516 64E8 05      B     SCREEN1
-     64E9 60  
-     64EA A3
-0517          DKEY0:      ; Burn to Flash
-0518 64EB 06      CALL  G@ASKCONFIRM
-     64EC 64  
-     64ED A3
-0519 64EE D6      CEQ   '1',@SCANKEY       is the key one?
-     64EF 75  
-     64F0 31  
-0520 64F1 42      BR    G@DUMPSCREEN       no: DUMPSCREEN
-     64F2 EC  
-0521          ; Yes, continue to Flash the MCU
-0522 64F3 04      BACK  >F3              screen colors: white on some other color
-     64F4 F3  
-0523 64F5 BE      ST    'F',V@VALIDIND    ; Command valid indicator
-     64F6 A0  
-     64F7 83
-     64F8 46  
-0524 64F9 BE      ST    6,@GCMDBYTE
-     64FA 40  
-     64FB 06  
-0525 64FC BF      DST   >1234,@GCMDBYTE+2
-     64FD 42  
-     64FE 12  
-     64FF 34
-0526 6500 87      DCLR  @GCMDBYTE+4
-     6501 44  
-0527 6502 87      DCLR  @GCMDBYTE+6
-     6503 46  
-0528 6504 06      CALL  ISSUECMD
-     6505 62  
-     6506 A0
-0529          ; We probably do not return from this call... GROMMY might be in a funny state
-0530 6507 05      B     G@MAKEDUMP
-     6508 63  
-     6509 D3
-0531          
-0532          DKEY4:      ; Command to fill GRAM with >FF, all 24K
-0533 650A BF      DST   >FFFF,@PAD2   ; Fill value, 2 bytes
-     650B 5E  
-     650C FF  
-     650D FF
-0534 650E BE      ST    '*',V@VALIDIND    ; Command valid indicator
-     650F A0  
-     6510 83
-     6511 2A  
-0535 6512 87      DCLR  @PAD4
-     6513 60  
-0536 6514 2D  !   MOVE  2,@PAD2,G@0(@PAD4)    ; store to grom
-     6515 00  
-     6516 02
-     6517 00  
-     6518 00
-     6519 60
-     651A 5E  
-0537 651B 95      DINCT @PAD4
-     651C 60  
-0538 651D D7      DCEQ  >6000,@PAD4
-     651E 60  
-     651F 60  
-     6520 00
-0539 6521 45      BR    -!
-     6522 14  
-0540 6523 06      CALL  CLEARVALID
-     6524 65  
-     6525 6F
-0541 6526 05      B     MAKEDUMP
-     6527 63  
-     6528 D3
-0542          
-0543          DKEY5:
-0544 6529 BE      ST    '*',V@VALIDIND    ; Command valid indicator
-     652A A0  
-     652B 83
-     652C 2A  
-0545 652D 21      MOVE >2000,G@>8000,G@>0000
-     652E 20  
-     652F 00
-     6530 00  
-     6531 00
-     6532 80  
-     6533 00
-0546 6534 21      MOVE >2000,G@>A000,G@>2000
-     6535 20  
-     6536 00
-     6537 20  
-     6538 00
-     6539 A0  
-     653A 00
-0547 653B 21      MOVE >2000,G@>C000,G@>4000
-     653C 20  
-     653D 00
-     653E 40  
-     653F 00
-     6540 C0  
-     6541 00
-0548 6542 06      CALL  CLEARVALID
-     6543 65  
-     6544 6F
-0549 6545 05      B     MAKEDUMP
-     6546 63  
-     6547 D3
-0550          
-0551          DKEY6:      ; ARM execute at address X
-0552 6548 BD      DST   @XREG,@PAD0
-     6549 5C  
-     654A 2C  
-0553 654B B6      OR    >0100,@PAD0
-     654C 5C  
-     654D 00  
-0554 654E BD      DST   @PAD0,@GCMDBYTE+2   ; thumb bit high
-     654F 42  
-     6550 5C  
-0555          DKEY6ASK:
-0556 6551 06      CALL  G@ASKCONFIRM
-     6552 64  
-     6553 A3
-0557 6554 D6      CEQ   '1',@SCANKEY       is the key one?
-     6555 75  
-     6556 31  
-0558 6557 42      BR    G@DUMPSCREEN       no: DUMPSCREEN
-     6558 EC  
-0559 6559 BE      ST    'F',V@VALIDIND    ; Command valid indicator
-     655A A0  
-     655B 83
-     655C 46  
-0560 655D BE      ST    7,@GCMDBYTE
-     655E 40  
-     655F 07  
-0561 6560 87      DCLR  @GCMDBYTE+4
-     6561 44  
-0562 6562 87      DCLR  @GCMDBYTE+6
-     6563 46  
-0563 6564 06      CALL  ISSUECMD
-     6565 62  
-     6566 A0
-0564          ; We probably do not return from this call... GROMMY might be in a funny state
-0565 6567 43      BR    MAKEDUMP
-     6568 D3  
-0566          
-0567          DKEY7:
-0568 6569 BF      DST   >0140,@GCMDBYTE+2  ; ARM has different byte order
-     656A 42  
-     656B 01  
-     656C 40
-0569 656D 45      BR    DKEY6ASK
-     656E 51  
-0570          
-0571          *----------------------------------------
-0572          CLEARVALID:
-0573 656F BE      ST    ' ',V@VALIDIND
-     6570 A0  
-     6571 83
-     6572 20  
-0574 6573 BE      ST    ' ',V@VALIDIND+1
-     6574 A0  
-     6575 84
-     6576 20  
-0575 6577 BE      ST    ' ',V@VALIDIND+2
-     6578 A0  
-     6579 85
-     657A 20  
-0576 657B BE      ST    ' ',V@VALIDIND+3
-     657C A0  
-     657D 86
-     657E 20  
-0577 657F 00      RTN
-0578          
-0579          *----------------------------------------
-0580          * Edit HEX
-0581          * Number already displayed with E0..EF or F0..FF.
-0582          * Parameters:
-0583          *   VRAMP points to the screen area.
-0584          *   PAD2:PAD3 points to the value.
-0585          *   PAD4 number of digits to edit. Must be even.
-0586          *----------------------------------------
-0587          EDITHEX:
-0588 6580 86      CLR  @INDEX   ; current digit index
-     6581 61  
-0589          EWAIT:
-0590 6582 03      SCAN
-0591 6583 65      BS   EGOTKEY
-     6584 A1  
-0592          ; No key. Flash the cursor pointed at VRAMP by copying bit 4 of frame counter
-0593          ; to the character code.
-0594 6585 BC      ST   @VDPTIMER,@PAD0
-     6586 5C  
-     6587 79  
-0595 6588 B2      AND  >10,@PAD0
-     6589 5C  
-     658A 10  
-0596 658B BC      ST   V@0(@VRAMP),@PAD1
-     658C 5D  
-     658D E0  
-     658E 00
-     658F 40
-0597 6590 B2      AND  >EF,@PAD1
-     6591 5D  
-     6592 EF  
-0598 6593 B4      OR   @PAD1,@PAD0
-     6594 5C  
-     6595 5D  
-0599 6596 BC      ST  @PAD0,V@0(@VRAMP)
-     6597 E0  
-     6598 00
-     6599 40
+     64E5 A0
+     64E6 20  
+0516 64E7 35      MOVE 768-VEROFS-1,V@VEROFS,V@VEROFS+1   ; Clear screen bottom
+     64E8 02  
+     64E9 5F
+     64EA A0  
+     64EB A1
+     64EC A0  
+     64ED A0
+0517 64EE 05      B     SCREEN1
+     64EF 60  
+     64F0 A3
+0518          DKEY0:      ; Burn to Flash
+0519 64F1 06      CALL  G@ASKCONFIRM
+     64F2 64  
+     64F3 A9
+0520 64F4 D6      CEQ   '1',@SCANKEY       is the key one?
+     64F5 75  
+     64F6 31  
+0521 64F7 42      BR    G@DUMPSCREEN       no: DUMPSCREEN
+     64F8 EC  
+0522          ; Yes, continue to Flash the MCU
+0523 64F9 04      BACK  >F3              screen colors: white on some other color
+     64FA F3  
+0524 64FB BE      ST    'F',V@VALIDIND    ; Command valid indicator
+     64FC A0  
+     64FD 83
+     64FE 46  
+0525 64FF BE      ST    6,@GCMDBYTE
+     6500 40  
+     6501 06  
+0526 6502 BF      DST   >1234,@GCMDBYTE+2
+     6503 42  
+     6504 12  
+     6505 34
+0527 6506 87      DCLR  @GCMDBYTE+4
+     6507 44  
+0528 6508 87      DCLR  @GCMDBYTE+6
+     6509 46  
+0529 650A 06      CALL  ISSUECMD
+     650B 62  
+     650C A0
+0530          ; We probably do not return from this call... GROMMY might be in a funny state
+0531 650D 05      B     G@MAKEDUMP
+     650E 63  
+     650F D9
+0532          
+0533          DKEY4:      ; Command to fill GRAM with >FF, all 24K
+0534 6510 BF      DST   >FFFF,@PAD2   ; Fill value, 2 bytes
+     6511 5E  
+     6512 FF  
+     6513 FF
+0535 6514 BE      ST    '*',V@VALIDIND    ; Command valid indicator
+     6515 A0  
+     6516 83
+     6517 2A  
+0536 6518 87      DCLR  @PAD4
+     6519 60  
+0537 651A 2D  !   MOVE  2,@PAD2,G@0(@PAD4)    ; store to grom
+     651B 00  
+     651C 02
+     651D 00  
+     651E 00
+     651F 60
+     6520 5E  
+0538 6521 95      DINCT @PAD4
+     6522 60  
+0539 6523 D7      DCEQ  >6000,@PAD4
+     6524 60  
+     6525 60  
+     6526 00
+0540 6527 45      BR    -!
+     6528 1A  
+0541 6529 06      CALL  CLEARVALID
+     652A 65  
+     652B 75
+0542 652C 05      B     MAKEDUMP
+     652D 63  
+     652E D9
+0543          
+0544          DKEY5:
+0545 652F BE      ST    '*',V@VALIDIND    ; Command valid indicator
+     6530 A0  
+     6531 83
+     6532 2A  
+0546 6533 21      MOVE >2000,G@>8000,G@>0000
+     6534 20  
+     6535 00
+     6536 00  
+     6537 00
+     6538 80  
+     6539 00
+0547 653A 21      MOVE >2000,G@>A000,G@>2000
+     653B 20  
+     653C 00
+     653D 20  
+     653E 00
+     653F A0  
+     6540 00
+0548 6541 21      MOVE >2000,G@>C000,G@>4000
+     6542 20  
+     6543 00
+     6544 40  
+     6545 00
+     6546 C0  
+     6547 00
+0549 6548 06      CALL  CLEARVALID
+     6549 65  
+     654A 75
+0550 654B 05      B     MAKEDUMP
+     654C 63  
+     654D D9
+0551          
+0552          DKEY6:      ; ARM execute at address X
+0553 654E BD      DST   @XREG,@PAD0
+     654F 5C  
+     6550 2C  
+0554 6551 B6      OR    >0100,@PAD0
+     6552 5C  
+     6553 00  
+0555 6554 BD      DST   @PAD0,@GCMDBYTE+2   ; thumb bit high
+     6555 42  
+     6556 5C  
+0556          DKEY6ASK:
+0557 6557 06      CALL  G@ASKCONFIRM
+     6558 64  
+     6559 A9
+0558 655A D6      CEQ   '1',@SCANKEY       is the key one?
+     655B 75  
+     655C 31  
+0559 655D 42      BR    G@DUMPSCREEN       no: DUMPSCREEN
+     655E EC  
+0560 655F BE      ST    'F',V@VALIDIND    ; Command valid indicator
+     6560 A0  
+     6561 83
+     6562 46  
+0561 6563 BE      ST    7,@GCMDBYTE
+     6564 40  
+     6565 07  
+0562 6566 87      DCLR  @GCMDBYTE+4
+     6567 44  
+0563 6568 87      DCLR  @GCMDBYTE+6
+     6569 46  
+0564 656A 06      CALL  ISSUECMD
+     656B 62  
+     656C A0
+0565          ; We probably do not return from this call... GROMMY might be in a funny state
+0566 656D 43      BR    MAKEDUMP
+     656E D9  
+0567          
+0568          DKEY7:
+0569 656F BF      DST   >0140,@GCMDBYTE+2  ; ARM has different byte order
+     6570 42  
+     6571 01  
+     6572 40
+0570 6573 45      BR    DKEY6ASK
+     6574 57  
+0571          
+0572          *----------------------------------------
+0573          CLEARVALID:
+0574 6575 BE      ST    ' ',V@VALIDIND
+     6576 A0  
+     6577 83
+     6578 20  
+0575 6579 BE      ST    ' ',V@VALIDIND+1
+     657A A0  
+     657B 84
+     657C 20  
+0576 657D BE      ST    ' ',V@VALIDIND+2
+     657E A0  
+     657F 85
+     6580 20  
+0577 6581 BE      ST    ' ',V@VALIDIND+3
+     6582 A0  
+     6583 86
+     6584 20  
+0578 6585 00      RTN
+0579          
+0580          *----------------------------------------
+0581          * Edit HEX
+0582          * Number already displayed with E0..EF or F0..FF.
+0583          * Parameters:
+0584          *   VRAMP points to the screen area.
+0585          *   PAD2:PAD3 points to the value.
+0586          *   PAD4 number of digits to edit. Must be even.
+0587          *----------------------------------------
+0588          EDITHEX:
+0589 6586 86      CLR  @INDEX   ; current digit index
+     6587 61  
+0590          EWAIT:
+0591 6588 03      SCAN
+0592 6589 65      BS   EGOTKEY
+     658A A7  
+0593          ; No key. Flash the cursor pointed at VRAMP by copying bit 4 of frame counter
+0594          ; to the character code.
+0595 658B BC      ST   @VDPTIMER,@PAD0
+     658C 5C  
+     658D 79  
+0596 658E B2      AND  >10,@PAD0
+     658F 5C  
+     6590 10  
+0597 6591 BC      ST   V@0(@VRAMP),@PAD1
+     6592 5D  
+     6593 E0  
+     6594 00
+     6595 40
+0598 6596 B2      AND  >EF,@PAD1
+     6597 5D  
+     6598 EF  
+0599 6599 B4      OR   @PAD1,@PAD0
      659A 5C  
-0600 659B 90      INC   V@PATADR
-     659C AE  
-     659D F8
-0601 659E 05      B    EWAIT
-     659F 65  
-     65A0 82
-0602          
-0603          EGOTKEY:    ; We received a key. If it is '0' - '9' or 'A'-'F' it is a hex digit, thus edit.
-0604 65A1 CE      CGT   '0'-1,@SCANKEY       ; greater than >= 0
-     65A2 75  
-     65A3 2F  
-0605 65A4 45      BR    ENODIGIT             ; No -> ENODIGIT
-     65A5 E0  
-0606 65A6 CE      CGT   '9',@SCANKEY         ; Key greater than '9'?
-     65A7 75  
-     65A8 39  
-0607 65A9 65      BS    CHECKAF
-     65AA D0  
-0608 65AB A6      SUB   '0',@SCANKEY         ; Here we have '0'-'9' make it 0-9
-     65AC 75  
-     65AD 30  
-0609          GOTDIGIT:
-0610 65AE A2      ADD   HEXBASECH,@SCANKEY
-     65AF 75  
-     65B0 E0  
-0611 65B1 BC      ST    @SCANKEY,V@0(@VRAMP)  ; Store digit into VRAM.
-     65B2 E0  
-     65B3 00
-     65B4 40
+     659B 5D  
+0600 659C BC      ST  @PAD0,V@0(@VRAMP)
+     659D E0  
+     659E 00
+     659F 40
+     65A0 5C  
+0601 65A1 90      INC   V@PATADR
+     65A2 AE  
+     65A3 F8
+0602 65A4 05      B    EWAIT
+     65A5 65  
+     65A6 88
+0603          
+0604          EGOTKEY:    ; We received a key. If it is '0' - '9' or 'A'-'F' it is a hex digit, thus edit.
+0605 65A7 CE      CGT   '0'-1,@SCANKEY       ; greater than >= 0
+     65A8 75  
+     65A9 2F  
+0606 65AA 45      BR    ENODIGIT             ; No -> ENODIGIT
+     65AB E6  
+0607 65AC CE      CGT   '9',@SCANKEY         ; Key greater than '9'?
+     65AD 75  
+     65AE 39  
+0608 65AF 65      BS    CHECKAF
+     65B0 D6  
+0609 65B1 A6      SUB   '0',@SCANKEY         ; Here we have '0'-'9' make it 0-9
+     65B2 75  
+     65B3 30  
+0610          GOTDIGIT:
+0611 65B4 A2      ADD   HEXBASECH,@SCANKEY
      65B5 75  
-0612 65B6 91      DINC  @VRAMP
-     65B7 40  
-0613 65B8 90      INC   @INDEX
-     65B9 61  
-0614 65BA D4      CEQ   @INDEX,@PAD4          ; Index=number of digitss?
-     65BB 60  
-     65BC 61  
-0615 65BD 45      BR    EWAIT                 ; No: get back to waiting next key
-     65BE 82  
-0616 65BF 06      CALL  BACK2BEGIN
-     65C0 65  
-     65C1 C5
-0617 65C2 05      B     EWAIT                 ; Wait for next keypress
-     65C3 65  
-     65C4 82
-0618          
-0619          BACK2BEGIN:
-0620 65C5 B2      AND   >EF,V@0(VRAMP)        ; Yes: make sure no cursor show here.
-     65C6 E0  
-     65C7 00
-     65C8 40
-     65C9 EF  
-0621 65CA A4      SUB   @INDEX,@VRAMP+1       ; Yes: Reset VRAMP back to beginning of number (BUGBUG: carry not handled!)
-     65CB 41  
-     65CC 61  
-0622 65CD 86      CLR   @INDEX                ; Reset index
-     65CE 61  
-0623 65CF 00      RTN
-0624          
-0625          CHECKAF:                        ; Check if we have 'A'..'F'
-0626 65D0 CE      CGT   'A'-1,@SCANKEY        ; >= 'A' ?
-     65D1 75  
-     65D2 40  
-0627 65D3 45      BR    ENODIGIT              ; no: -> ENODIGIT
-     65D4 E0  
-0628 65D5 CE      CGT   'F',@SCANKEY          ; >= 'F' ?
-     65D6 75  
-     65D7 46  
-0629 65D8 65      BS    ENODIGIT              ; Yes: -> ENODIGIT
-     65D9 E0  
-0630 65DA A6      SUB   'A'-10,@SCANKEY       ; Make 'A' into 10
-     65DB 75  
-     65DC 37  
-0631 65DD 05      B     GOTDIGIT              ; Display etc.
-     65DE 65  
-     65DF AE
-0632          
-0633          ENODIGIT:                       ; Here we do not have digit 0-9, A-F
-0634 65E0 D6      CEQ    13,@SCANKEY          ; Is it enter?
+     65B6 E0  
+0612 65B7 BC      ST    @SCANKEY,V@0(@VRAMP)  ; Store digit into VRAM.
+     65B8 E0  
+     65B9 00
+     65BA 40
+     65BB 75  
+0613 65BC 91      DINC  @VRAMP
+     65BD 40  
+0614 65BE 90      INC   @INDEX
+     65BF 61  
+0615 65C0 D4      CEQ   @INDEX,@PAD4          ; Index=number of digitss?
+     65C1 60  
+     65C2 61  
+0616 65C3 45      BR    EWAIT                 ; No: get back to waiting next key
+     65C4 88  
+0617 65C5 06      CALL  BACK2BEGIN
+     65C6 65  
+     65C7 CB
+0618 65C8 05      B     EWAIT                 ; Wait for next keypress
+     65C9 65  
+     65CA 88
+0619          
+0620          BACK2BEGIN:
+0621 65CB B2      AND   >EF,V@0(VRAMP)        ; Yes: make sure no cursor show here.
+     65CC E0  
+     65CD 00
+     65CE 40
+     65CF EF  
+0622 65D0 A4      SUB   @INDEX,@VRAMP+1       ; Yes: Reset VRAMP back to beginning of number (BUGBUG: carry not handled!)
+     65D1 41  
+     65D2 61  
+0623 65D3 86      CLR   @INDEX                ; Reset index
+     65D4 61  
+0624 65D5 00      RTN
+0625          
+0626          CHECKAF:                        ; Check if we have 'A'..'F'
+0627 65D6 CE      CGT   'A'-1,@SCANKEY        ; >= 'A' ?
+     65D7 75  
+     65D8 40  
+0628 65D9 45      BR    ENODIGIT              ; no: -> ENODIGIT
+     65DA E6  
+0629 65DB CE      CGT   'F',@SCANKEY          ; >= 'F' ?
+     65DC 75  
+     65DD 46  
+0630 65DE 65      BS    ENODIGIT              ; Yes: -> ENODIGIT
+     65DF E6  
+0631 65E0 A6      SUB   'A'-10,@SCANKEY       ; Make 'A' into 10
      65E1 75  
-     65E2 0D  
-0635 65E3 45      BR     EWAIT                ; No: get next key
-     65E4 82  
-0636          ; Here we have the digits in VRAM. Decode the number.
-0637 65E5 06      CALL   BACK2BEGIN           ; Reset VRAMP to beginning of number
-     65E6 65  
-     65E7 C5
-0638 65E8 BC  !   ST     V@0(@VRAMP),@PAD0    ; Get first digit
-     65E9 5C  
-     65EA E0  
-     65EB 00
-     65EC 40
-0639 65ED B2      AND    >0F,@PAD0            ; Low 4 bits are the hex digit
-     65EE 5C  
-     65EF 0F  
-0640 65F0 E2      SLL    4,@PAD0
-     65F1 5C  
-     65F2 04  
-0641 65F3 BC      ST     V@1(VRAMP),@PAD1     ; Get second digit
-     65F4 5D  
-     65F5 E0  
-     65F6 01
-     65F7 40
-0642 65F8 B2      AND    >0F,@PAD1
-     65F9 5D  
-     65FA 0F  
-0643 65FB B4      OR     @PAD1,@PAD0          ; Now PAD0 has the byte.
-     65FC 5C  
-     65FD 5D  
-0644 65FE BC      ST     @PAD0,@0(@PAD2)      ; Store byte
-     65FF CF  
-     6600 7D
-     6601 00
-     6602 5E
-     6603 5C  
-0645 6604 94      INCT   @INDEX
-     6605 61  
-0646 6606 91      DINC   @PAD2
-     6607 5E  
-0647 6608 95      DINCT  @VRAMP
-     6609 40  
-0648 660A D4      CEQ    @INDEX,@PAD4         ; Are we at the end, INDEX==COUNT?
-     660B 60  
-     660C 61  
-0649 660D 45      BR     -!                   ; No, continue
-     660E E8  
-0650 660F A4      SUB    @INDEX,@PAD3         ; Reset PAD2:PAD3 pointer (BUGBUG no carry)
-     6610 5F  
-     6611 61  
-0651 6612 06      CALL   BACK2BEGIN           ; Reset VRAMP
-     6613 65  
-     6614 C5
-0652 6615 00      RTN                         ; Done
-0653          
+     65E2 37  
+0632 65E3 05      B     GOTDIGIT              ; Display etc.
+     65E4 65  
+     65E5 B4
+0633          
+0634          ENODIGIT:                       ; Here we do not have digit 0-9, A-F
+0635 65E6 D6      CEQ    13,@SCANKEY          ; Is it enter?
+     65E7 75  
+     65E8 0D  
+0636 65E9 45      BR     EWAIT                ; No: get next key
+     65EA 88  
+0637          ; Here we have the digits in VRAM. Decode the number.
+0638 65EB 06      CALL   BACK2BEGIN           ; Reset VRAMP to beginning of number
+     65EC 65  
+     65ED CB
+0639 65EE BC  !   ST     V@0(@VRAMP),@PAD0    ; Get first digit
+     65EF 5C  
+     65F0 E0  
+     65F1 00
+     65F2 40
+0640 65F3 B2      AND    >0F,@PAD0            ; Low 4 bits are the hex digit
+     65F4 5C  
+     65F5 0F  
+0641 65F6 E2      SLL    4,@PAD0
+     65F7 5C  
+     65F8 04  
+0642 65F9 BC      ST     V@1(VRAMP),@PAD1     ; Get second digit
+     65FA 5D  
+     65FB E0  
+     65FC 01
+     65FD 40
+0643 65FE B2      AND    >0F,@PAD1
+     65FF 5D  
+     6600 0F  
+0644 6601 B4      OR     @PAD1,@PAD0          ; Now PAD0 has the byte.
+     6602 5C  
+     6603 5D  
+0645 6604 BC      ST     @PAD0,@0(@PAD2)      ; Store byte
+     6605 CF  
+     6606 7D
+     6607 00
+     6608 5E
+     6609 5C  
+0646 660A 94      INCT   @INDEX
+     660B 61  
+0647 660C 91      DINC   @PAD2
+     660D 5E  
+0648 660E 95      DINCT  @VRAMP
+     660F 40  
+0649 6610 D4      CEQ    @INDEX,@PAD4         ; Are we at the end, INDEX==COUNT?
+     6611 60  
+     6612 61  
+0650 6613 45      BR     -!                   ; No, continue
+     6614 EE  
+0651 6615 A4      SUB    @INDEX,@PAD3         ; Reset PAD2:PAD3 pointer (BUGBUG no carry)
+     6616 5F  
+     6617 61  
+0652 6618 06      CALL   BACK2BEGIN           ; Reset VRAMP
+     6619 65  
+     661A CB
+0653 661B 00      RTN                         ; Done
 0654          
-0655          *----------------------------------------
-0656          * Display in HEX the byte in PAD0
-0657          *----------------------------------------
-0658          HEXOUT:
-0659 6616 0F    XML >F0       ; Jump via >8300
-     6617 F0  
-0660 6618 00    RTN
-0661          
-0662          HEXOUT1:
-0663 6619 BC      ST   @PAD0,@PAD4
-     661A 60  
-     661B 5C  
-0664 661C E6      SRL   >04,@PAD4       isolate first nibble
-     661D 60  
-     661E 04  
-0665 661F CE      CGT   >09,@PAD4       greater than 9?
+0655          
+0656          *----------------------------------------
+0657          * Display in HEX the byte in PAD0
+0658          *----------------------------------------
+0659          HEXOUT:
+0660 661C 0F    XML >F0       ; Jump via >8300
+     661D F0  
+0661 661E 00    RTN
+0662          
+0663          HEXOUT1:
+0664 661F BC      ST   @PAD0,@PAD4
      6620 60  
-     6621 09  
-0666 6622 66      BS    HEX1            yes
-     6623 29  
-0667 6624 A2      ADD   >30,@PAD4       no: make it char 0-9
-     6625 60  
-     6626 30  
-0668 6627 46      BR    HEX2
-     6628 2C  
-0669 6629 A2  HEX1: ADD   >37,@PAD4      yes: make it char A-F
-     662A 60  
-     662B 37  
-0670          HEX2:
-0671          ; Output first hex digit (most significant digit)
-0672 662C BC      ST    @PAD4,V@0(@VRAMP)
-     662D E0  
-     662E 00
-     662F 40
+     6621 5C  
+0665 6622 E6      SRL   >04,@PAD4       isolate first nibble
+     6623 60  
+     6624 04  
+0666 6625 CE      CGT   >09,@PAD4       greater than 9?
+     6626 60  
+     6627 09  
+0667 6628 66      BS    HEX1            yes
+     6629 2F  
+0668 662A A2      ADD   >30,@PAD4       no: make it char 0-9
+     662B 60  
+     662C 30  
+0669 662D 46      BR    HEX2
+     662E 32  
+0670 662F A2  HEX1: ADD   >37,@PAD4      yes: make it char A-F
      6630 60  
-0673          ; Work on 2nd digit
-0674 6631 BC      ST    @PAD0,@PAD4     copy number
-     6632 60  
-     6633 5C  
-0675 6634 B2      AND   >0F,@PAD4       isolate second nibble
-     6635 60  
-     6636 0F  
-0676 6637 CE      CGT   >09,@PAD4       greater than 9?
+     6631 37  
+0671          HEX2:
+0672          ; Output first hex digit (most significant digit)
+0673 6632 BC      ST    @PAD4,V@0(@VRAMP)
+     6633 E0  
+     6634 00
+     6635 40
+     6636 60  
+0674          ; Work on 2nd digit
+0675 6637 BC      ST    @PAD0,@PAD4     copy number
      6638 60  
-     6639 09  
-0677 663A 66      BS    HEX3          yes
-     663B 41  
-0678 663C A2      ADD   >30,@PAD4       no: make it char 0-9
-     663D 60  
-     663E 30  
-0679 663F 46      BR    HEX4
-     6640 44  
-0680 6641 A2  HEX3  ADD   >37,@PAD4       yes: make it char A-F
-     6642 60  
-     6643 37  
-0681          HEX4:
-0682          ; Output 2nd hex digit (least significant digit)
-0683 6644 BC      ST    @PAD4,V@1(@VRAMP)
-     6645 E0  
-     6646 01
-     6647 40
+     6639 5C  
+0676 663A B2      AND   >0F,@PAD4       isolate second nibble
+     663B 60  
+     663C 0F  
+0677 663D CE      CGT   >09,@PAD4       greater than 9?
+     663E 60  
+     663F 09  
+0678 6640 66      BS    HEX3          yes
+     6641 47  
+0679 6642 A2      ADD   >30,@PAD4       no: make it char 0-9
+     6643 60  
+     6644 30  
+0680 6645 46      BR    HEX4
+     6646 4A  
+0681 6647 A2  HEX3  ADD   >37,@PAD4       yes: make it char A-F
      6648 60  
-0684 6649 00      RTN
-0685          
-0686          * Use the new hex characters which do not have a gap between 9 and A
-0687          HEXOUT2:
-0688 664A BC      ST   @PAD0,@PAD4
-     664B 60  
-     664C 5C  
-0689 664D BC      ST   @PAD0,@PAD5
-     664E 61  
-     664F 5C  
-0690 6650 E6      SRL  >04,@PAD4       isolate first nibble
+     6649 37  
+0682          HEX4:
+0683          ; Output 2nd hex digit (least significant digit)
+0684 664A BC      ST    @PAD4,V@1(@VRAMP)
+     664B E0  
+     664C 01
+     664D 40
+     664E 60  
+0685 664F 00      RTN
+0686          
+0687          * Use the new hex characters which do not have a gap between 9 and A
+0688          HEXOUT2:
+0689 6650 BC      ST   @PAD0,@PAD4
      6651 60  
-     6652 04  
-0691 6653 B2      AND  >0F,@PAD5
+     6652 5C  
+0690 6653 BC      ST   @PAD0,@PAD5
      6654 61  
-     6655 0F  
-0692          TWINHEXBC EQU   (HEXBASECH * 256) + HEXBASECH
-0693 6656 A3      DADD TWINHEXBC,@PAD4
+     6655 5C  
+0691 6656 E6      SRL  >04,@PAD4       isolate first nibble
      6657 60  
-     6658 E0  
-     6659 E0
-0694 665A BD      DST  @PAD4,V@0(VRAMP)
-     665B E0  
-     665C 00
-     665D 40
-     665E 60  
-0695 665F 01      RTNC
-0696          
-0697          *----------------------------------------
-0698          * Screen used to select paging features
-0699          *----------------------------------------
-0700          PAGINGSCREEN:
-0701 6660 BE      ST   ' ',V@VEROFS
-     6661 A0  
-     6662 A0
-     6663 20  
-0702 6664 35      MOVE 768-VEROFS-1,V@VEROFS,V@VEROFS+1   ; Clear screen bottom
-     6665 02  
-     6666 5F
+     6658 04  
+0692 6659 B2      AND  >0F,@PAD5
+     665A 61  
+     665B 0F  
+0693          TWINHEXBC EQU   (HEXBASECH * 256) + HEXBASECH
+0694 665C A3      DADD TWINHEXBC,@PAD4
+     665D 60  
+     665E E0  
+     665F E0
+0695 6660 BD      DST  @PAD4,V@0(VRAMP)
+     6661 E0  
+     6662 00
+     6663 40
+     6664 60  
+0696 6665 01      RTNC
+0697          
+0698          *----------------------------------------
+0699          * Screen used to select paging features
+0700          *----------------------------------------
+0701          PAGINGSCREEN:
+0702 6666 BE      ST   ' ',V@VEROFS
      6667 A0  
-     6668 A1
-     6669 A0  
-     666A A0
-0703 666B 08      FMT
-0704 666C FF      COL LALIGN
-     666D 02  
-0705 666E FE      ROW LAYOUTVER
-     666F 05  
-0706 6670 1A      HTEX '1 DEC 2 INC DUMP ADDR 3 RET'
-     6671 31  
-     6672 20  
-     6673 44  
-     6674 45  
-     6675 43  
-     6676 20  
-     6677 32  
+     6668 A0
+     6669 20  
+0703 666A 35      MOVE 768-VEROFS-1,V@VEROFS,V@VEROFS+1   ; Clear screen bottom
+     666B 02  
+     666C 5F
+     666D A0  
+     666E A1
+     666F A0  
+     6670 A0
+0704 6671 08      FMT
+0705 6672 FF      COL LALIGN
+     6673 02  
+0706 6674 FE      ROW LAYOUTVER
+     6675 05  
+0707 6676 1A      HTEX '1 DEC 2 INC DUMP ADDR 3 RET'
+     6677 31  
      6678 20  
-     6679 49  
-     667A 4E  
+     6679 44  
+     667A 45  
      667B 43  
      667C 20  
-     667D 44  
-     667E 55  
-     667F 4D  
-     6680 50  
-     6681 20  
-     6682 41  
+     667D 32  
+     667E 20  
+     667F 49  
+     6680 4E  
+     6681 43  
+     6682 20  
      6683 44  
-     6684 44  
-     6685 52  
-     6686 20  
-     6687 33  
-     6688 20  
-     6689 52  
-     668A 45  
-     668B 54  
-0707 668C A0      ROW+ >01
-0708 668D FF      COL LALIGN
-     668E 02  
-0709 668F FB      FEND
-0710          
-0711          PKEYWAIT:
-0712 6690 03      SCAN
-0713 6691 66      BS    PGOTKEY
-     6692 99  
-0714 6693 90      INC   V@PATADR
-     6694 AE  
-     6695 F8
-0715 6696 05      B     PKEYWAIT
-     6697 66  
-     6698 90
-0716          PGOTKEY:
-0717 6699 05      B     SCREEN1
-     669A 60  
-     669B A3
-0718          
+     6684 55  
+     6685 4D  
+     6686 50  
+     6687 20  
+     6688 41  
+     6689 44  
+     668A 44  
+     668B 52  
+     668C 20  
+     668D 33  
+     668E 20  
+     668F 52  
+     6690 45  
+     6691 54  
+0708 6692 A0      ROW+ >01
+0709 6693 FF      COL LALIGN
+     6694 02  
+0710 6695 FB      FEND
+0711          
+0712          PKEYWAIT:
+0713 6696 03      SCAN
+0714 6697 66      BS    PGOTKEY
+     6698 9F  
+0715 6699 90      INC   V@PATADR
+     669A AE  
+     669B F8
+0716 669C 05      B     PKEYWAIT
+     669D 66  
+     669E 96
+0717          PGOTKEY:
+0718 669F 05      B     SCREEN1
+     66A0 60  
+     66A1 A3
 0719          
 0720          
-0721          *----------------------------------------
-0722          * Read grommy2 version, update on screen.
-0723          * Also read and set bank & shadow values.
-0724          *----------------------------------------
-0725          SHOW_VERSION
-0726 669C 06      CALL G@GINITCMD
-     669D 67  
-     669E 01
-0727 669F 06      CALL G@GSENDCMD
-     66A0 67  
-     66A1 08
-0728          * Check result of command - did we get OK?
-0729 66A2 31      MOVE 2,G@HWIF,@PAD0
-     66A3 00  
-     66A4 02
-     66A5 5C  
-     66A6 5F  
-     66A7 F0
-0730 66A8 D7      DCEQ >4F4B,@PAD0        ; did we get OK?
-     66A9 5C  
-     66AA 4F  
-     66AB 4B
-0731 66AC 66      BS   VER_OK             ; Yes: go to VER_OK
-     66AD B9  
-0732          ** No grommy2 detected. Put in dummy data.
-0733 66AE 87      DCLR @PAD2              ; Major and minor zero
-     66AF 5E  
-0734 66B0 BE      ST   99,@PAD4           ; Build 99
-     66B1 60  
-     66B2 63  
-0735 66B3 86      CLR  @SHADOW
-     66B4 51  
-0736 66B5 86      CLR  @BANK
-     66B6 50  
-0737 66B7 46      BR   VER1
-     66B8 D6  
-0738          VER_OK:     ; grommy responded, read data
-0739          * Copy values from GROM IF to pad
-0740 66B9 31      MOVE 3,G@HWIF+8,@PAD2
-     66BA 00  
-     66BB 03
-     66BC 5E  
-     66BD 5F  
-     66BE F8
-0741          * Get active bank from grommy2
-0742 66BF 31      MOVE 1,G@HWIF+3,@BANK
+0721          
+0722          *----------------------------------------
+0723          * Read grommy2 version, update on screen.
+0724          * Also read and set bank & shadow values.
+0725          *----------------------------------------
+0726          SHOW_VERSION
+0727 66A2 06      CALL G@GINITCMD
+     66A3 67  
+     66A4 07
+0728 66A5 06      CALL G@GSENDCMD
+     66A6 67  
+     66A7 0E
+0729          * Check result of command - did we get OK?
+0730 66A8 31      MOVE 2,G@HWIF,@PAD0
+     66A9 00  
+     66AA 02
+     66AB 5C  
+     66AC 5F  
+     66AD F0
+0731 66AE D7      DCEQ >4F4B,@PAD0        ; did we get OK?
+     66AF 5C  
+     66B0 4F  
+     66B1 4B
+0732 66B2 66      BS   VER_OK             ; Yes: go to VER_OK
+     66B3 BF  
+0733          ** No grommy2 detected. Put in dummy data.
+0734 66B4 87      DCLR @PAD2              ; Major and minor zero
+     66B5 5E  
+0735 66B6 BE      ST   99,@PAD4           ; Build 99
+     66B7 60  
+     66B8 63  
+0736 66B9 86      CLR  @SHADOW
+     66BA 51  
+0737 66BB 86      CLR  @BANK
+     66BC 50  
+0738 66BD 46      BR   VER1
+     66BE DC  
+0739          VER_OK:     ; grommy responded, read data
+0740          * Copy values from GROM IF to pad
+0741 66BF 31      MOVE 3,G@HWIF+8,@PAD2
      66C0 00  
-     66C1 01
-     66C2 50  
+     66C1 03
+     66C2 5E  
      66C3 5F  
-     66C4 F3
-0743 66C5 B2      AND  >0F,@BANK
-     66C6 50  
-     66C7 0F  
-0744 66C8 D6      CEQ  8,@BANK            ; Is GRAM bank 8 selected?
-     66C9 50  
-     66CA 08  
-0745 66CB 46      BR   NOGRAM1            ; No, we're good
-     66CC D0  
-0746 66CD BE      ST   3,@BANK            ; yes, convert to 3 here
-     66CE 50  
-     66CF 03  
-0747          NOGRAM1:
-0748          * Get RAM shadow from grommy2
-0749 66D0 31      MOVE 1,G@HWIF+4,@SHADOW
-     66D1 00  
-     66D2 01
-     66D3 51  
-     66D4 5F  
-     66D5 F4
-0750          VER1:
-0751          * Show major version in p2
-0752 66D6 BE      ST  '0',@PAD0
-     66D7 5C  
-     66D8 30  
-0753 66D9 A0      ADD @PAD2,@PAD0
-     66DA 5C  
-     66DB 5E  
-0754 66DC BC      ST  @PAD0,V@VEROFS+>A        Write to VRAM
-     66DD A0  
-     66DE AA
-     66DF 5C  
-0755          * Show minor version in p3
-0756 66E0 BE      ST  '0',@PAD0
-     66E1 5C  
-     66E2 30  
-0757 66E3 A0      ADD @PAD3,@PAD0
-     66E4 5C  
-     66E5 5F  
-0758 66E6 BC      ST  @PAD0,V@VEROFS+>C        Write to VRAM
-     66E7 A0  
-     66E8 AC
-     66E9 5C  
-0759          * Show build version in p4. The build is two digits from 0 to 99
-0760 66EA 86      CLR  @PAD0              Zero fill as the value to divide is 16 bits§
-     66EB 5C  
-0761 66EC BC      ST   @PAD4,@PAD1
-     66ED 5D  
-     66EE 60  
-0762 66EF AE      DIV  10,@PAD0           Quotiotent in PAD0, remainder PAD1
-     66F0 5C  
-     66F1 0A  
-0763 66F2 A2      ADD  '0',@PAD0
-     66F3 5C  
-     66F4 30  
-0764 66F5 BC      ST   @PAD0,V@VEROFS+>E      Write to VRAM
-     66F6 A0  
-     66F7 AE
-     66F8 5C  
-0765 66F9 A2      ADD  '0',@PAD1          Remainder
-     66FA 5D  
-     66FB 30  
-0766 66FC BC      ST   @PAD1,V@VEROFS+>F      Write to VRAM
-     66FD A0  
-     66FE AF
-     66FF 5D  
-0767 6700 00      RTN
-0768          
+     66C4 F8
+0742          * Get active bank from grommy2
+0743 66C5 31      MOVE 1,G@HWIF+3,@BANK
+     66C6 00  
+     66C7 01
+     66C8 50  
+     66C9 5F  
+     66CA F3
+0744 66CB B2      AND  >0F,@BANK
+     66CC 50  
+     66CD 0F  
+0745 66CE D6      CEQ  8,@BANK            ; Is GRAM bank 8 selected?
+     66CF 50  
+     66D0 08  
+0746 66D1 46      BR   NOGRAM1            ; No, we're good
+     66D2 D6  
+0747 66D3 BE      ST   3,@BANK            ; yes, convert to 3 here
+     66D4 50  
+     66D5 03  
+0748          NOGRAM1:
+0749          * Get RAM shadow from grommy2
+0750 66D6 31      MOVE 1,G@HWIF+4,@SHADOW
+     66D7 00  
+     66D8 01
+     66D9 51  
+     66DA 5F  
+     66DB F4
+0751          VER1:
+0752          * Show major version in p2
+0753 66DC BE      ST  '0',@PAD0
+     66DD 5C  
+     66DE 30  
+0754 66DF A0      ADD @PAD2,@PAD0
+     66E0 5C  
+     66E1 5E  
+0755 66E2 BC      ST  @PAD0,V@VEROFS+>A        Write to VRAM
+     66E3 A0  
+     66E4 AA
+     66E5 5C  
+0756          * Show minor version in p3
+0757 66E6 BE      ST  '0',@PAD0
+     66E7 5C  
+     66E8 30  
+0758 66E9 A0      ADD @PAD3,@PAD0
+     66EA 5C  
+     66EB 5F  
+0759 66EC BC      ST  @PAD0,V@VEROFS+>C        Write to VRAM
+     66ED A0  
+     66EE AC
+     66EF 5C  
+0760          * Show build version in p4. The build is two digits from 0 to 99
+0761 66F0 86      CLR  @PAD0              Zero fill as the value to divide is 16 bits§
+     66F1 5C  
+0762 66F2 BC      ST   @PAD4,@PAD1
+     66F3 5D  
+     66F4 60  
+0763 66F5 AE      DIV  10,@PAD0           Quotiotent in PAD0, remainder PAD1
+     66F6 5C  
+     66F7 0A  
+0764 66F8 A2      ADD  '0',@PAD0
+     66F9 5C  
+     66FA 30  
+0765 66FB BC      ST   @PAD0,V@VEROFS+>E      Write to VRAM
+     66FC A0  
+     66FD AE
+     66FE 5C  
+0766 66FF A2      ADD  '0',@PAD1          Remainder
+     6700 5D  
+     6701 30  
+0767 6702 BC      ST   @PAD1,V@VEROFS+>F      Write to VRAM
+     6703 A0  
+     6704 AF
+     6705 5D  
+0768 6706 00      RTN
 0769          
-0770          *----------------------------------------
-0771          * Init command buffer in pad
-0772          *----------------------------------------
-0773          GINITCMD
-0774 6701 31         MOVE  >0010,G@GROMMY_DAT,@GCMDBYTE    Copy command template from GROM
-     6702 00  
-     6703 10
-     6704 40  
-     6705 67  
-     6706 15
-0775 6707 00         RTN
-0776          
-0777          *----------------------------------------
-0778          * Send command to grommy2
-0779          *----------------------------------------
-0780          GSENDCMD
-0781 6708 BC         ST   @GCMDBYTE,@GCMDBYTE+1        Setup the complement of command byte
-     6709 41  
+0770          
+0771          *----------------------------------------
+0772          * Init command buffer in pad
+0773          *----------------------------------------
+0774          GINITCMD
+0775 6707 31         MOVE  >0010,G@GROMMY_DAT,@GCMDBYTE    Copy command template from GROM
+     6708 00  
+     6709 10
      670A 40  
-0782 670B BA         XOR   >FF,@GCMDBYTE+1
-     670C 41  
-     670D FF  
-0783 670E 25         MOVE  >0010,@GCMDBYTE,G@HWIF      Send command to grommy2
-     670F 00  
-     6710 10
-     6711 5F  
-     6712 F0
-     6713 40  
-0784 6714 00         RTN
-0785          
+     670B 67  
+     670C 1B
+0776 670D 00         RTN
+0777          
+0778          *----------------------------------------
+0779          * Send command to grommy2
+0780          *----------------------------------------
+0781          GSENDCMD
+0782 670E BC         ST   @GCMDBYTE,@GCMDBYTE+1        Setup the complement of command byte
+     670F 41  
+     6710 40  
+0783 6711 BA         XOR   >FF,@GCMDBYTE+1
+     6712 41  
+     6713 FF  
+0784 6714 25         MOVE  >0010,@GCMDBYTE,G@HWIF      Send command to grommy2
+     6715 00  
+     6716 10
+     6717 5F  
+     6718 F0
+     6719 40  
+0785 671A 00         RTN
 0786          
-0787          GROMMY_DAT
-0788 6715 00         DATA   >00FF,>003F,>0000,>0000
-     6716 FF
-     6717 00  
-     6718 3F
-     6719 00  
-     671A 00
-     671B 00  
-     671C 00
-0789 671D 45         TEXT 'EPGROMMY'
-     671E 50  
-     671F 47  
-     6720 52  
-     6721 4F  
-     6722 4D  
-     6723 4D  
-     6724 59  
-0790          
+0787          
+0788          GROMMY_DAT
+0789 671B 00         DATA   >00FF,>003F,>0000,>0000
+     671C FF
+     671D 00  
+     671E 3F
+     671F 00  
+     6720 00
+     6721 00  
+     6722 00
+0790 6723 45         TEXT 'EPGROMMY'
+     6724 50  
+     6725 47  
+     6726 52  
+     6727 4F  
+     6728 4D  
+     6729 4D  
+     672A 59  
 0791          
-0792          DENSE_FONT ; Define character cells wihtin 4x8 cell
-0793          ; Numnbers 0 and 1
-0794 6725 22          BYTE >22
-0795 6726 56          BYTE >56
-0796 6727 52          BYTE >52
-0797 6728 52          BYTE >52
-0798 6729 52          BYTE >52
-0799 672A 52          BYTE >52
-0800 672B 27          BYTE >27
-0801 672C 00          BYTE >00
-0802          ; Define a cell with 2 and 3
-0803 672D 26          BYTE >26
-0804 672E 51          BYTE >51
-0805 672F 11          BYTE >11
-0806 6730 26          BYTE >26
-0807 6731 41          BYTE >41
-0808 6732 41          BYTE >41
-0809 6733 76          BYTE >76
-0810 6734 00          BYTE >00
-0811          ; Define a cell with 4 and 5
-0812 6735 17          BYTE >17
-0813 6736 34          BYTE >34
-0814 6737 54          BYTE >54
-0815 6738 76          BYTE >76
-0816 6739 11          BYTE >11
-0817 673A 11          BYTE >11
-0818 673B 16          BYTE >16
-0819 673C 00          BYTE >00
-0820          ; Define a cell with 6 and 7
-0821 673D 37          BYTE >37
-0822 673E 41          BYTE >41
-0823 673F 62          BYTE >62
-0824 6740 52          BYTE >52
-0825 6741 52          BYTE >52
-0826 6742 52          BYTE >52
-0827 6743 22          BYTE >22
-0828 6744 00          BYTE >00
-0829          ; Define a cell with 8 and 9
-0830 6745 22          BYTE >22
-0831 6746 55          BYTE >55
-0832 6747 55          BYTE >55
-0833 6748 23          BYTE >23
-0834 6749 51          BYTE >51
-0835 674A 51          BYTE >51
-0836 674B 26          BYTE >26
-0837 674C 00          BYTE >00
-0838          ; Define a cell with A and B
-0839 674D 26          BYTE >26
-0840 674E 55          BYTE >55
-0841 674F 55          BYTE >55
-0842 6750 76          BYTE >76
-0843 6751 55          BYTE >55
-0844 6752 55          BYTE >55
-0845 6753 56          BYTE >56
-0846 6754 00          BYTE >00
-0847          ; Define a cell with C and D
-0848 6755 36          BYTE >36
-0849 6756 45          BYTE >45
-0850 6757 45          BYTE >45
-0851 6758 45          BYTE >45
-0852 6759 45          BYTE >45
-0853 675A 45          BYTE >45
-0854 675B 36          BYTE >36
-0855 675C 00          BYTE >00
-0856          ; Define a cell with E and F
-0857 675D 77          BYTE >77
-0858 675E 44          BYTE >44
-0859 675F 44          BYTE >44
-0860 6760 66          BYTE >66
-0861 6761 44          BYTE >44
-0862 6762 44          BYTE >44
-0863 6763 74          BYTE >74
-0864 6764 00          BYTE >00
-0865          
-0866          * Test code copied from Mini Memory
-0867 6765 31         MOVE  >0010,G@GROMMY_DAT,@GCMDBYTE    place parameter string in PAD
-     6766 00  
-     6767 10
-     6768 40  
-     6769 67  
-     676A 15
-0868 676B BC         ST    @>839A,@>8340                Copy command byte
-     676C 40  
-     676D 80  
-     676E 9A
-0869 676F BC         ST    @>839A,@>8341                The second byte is its complement
-     6770 41  
-     6771 80  
-     6772 9A
-0870 6773 BA         XOR   >FF,@>8341
-     6774 41  
-     6775 FF  
-0871 6776 BC         ST    @>839B,@>8342                Copy p2.
-     6777 42  
-     6778 80  
-     6779 9B
-0872 677A 25         MOVE  >0010,@>8340,G@HWIF         Copy from PAD @8340 to GRAM @5FF0. Does this work? Yes!
-     677B 00  
-     677C 10
-     677D 5F  
-     677E F0
-     677F 40  
-0873 6780 00         RTN
-0874          
-0875              copy 'bin2hex.gpl'
+0792          
+0793          DENSE_FONT ; Define character cells wihtin 4x8 cell
+0794          ; Numnbers 0 and 1
+0795 672B 22          BYTE >22
+0796 672C 56          BYTE >56
+0797 672D 52          BYTE >52
+0798 672E 52          BYTE >52
+0799 672F 52          BYTE >52
+0800 6730 52          BYTE >52
+0801 6731 27          BYTE >27
+0802 6732 00          BYTE >00
+0803          ; Define a cell with 2 and 3
+0804 6733 26          BYTE >26
+0805 6734 51          BYTE >51
+0806 6735 11          BYTE >11
+0807 6736 26          BYTE >26
+0808 6737 41          BYTE >41
+0809 6738 41          BYTE >41
+0810 6739 76          BYTE >76
+0811 673A 00          BYTE >00
+0812          ; Define a cell with 4 and 5
+0813 673B 17          BYTE >17
+0814 673C 34          BYTE >34
+0815 673D 54          BYTE >54
+0816 673E 76          BYTE >76
+0817 673F 11          BYTE >11
+0818 6740 11          BYTE >11
+0819 6741 16          BYTE >16
+0820 6742 00          BYTE >00
+0821          ; Define a cell with 6 and 7
+0822 6743 37          BYTE >37
+0823 6744 41          BYTE >41
+0824 6745 62          BYTE >62
+0825 6746 52          BYTE >52
+0826 6747 52          BYTE >52
+0827 6748 52          BYTE >52
+0828 6749 22          BYTE >22
+0829 674A 00          BYTE >00
+0830          ; Define a cell with 8 and 9
+0831 674B 22          BYTE >22
+0832 674C 55          BYTE >55
+0833 674D 55          BYTE >55
+0834 674E 23          BYTE >23
+0835 674F 51          BYTE >51
+0836 6750 51          BYTE >51
+0837 6751 26          BYTE >26
+0838 6752 00          BYTE >00
+0839          ; Define a cell with A and B
+0840 6753 26          BYTE >26
+0841 6754 55          BYTE >55
+0842 6755 55          BYTE >55
+0843 6756 76          BYTE >76
+0844 6757 55          BYTE >55
+0845 6758 55          BYTE >55
+0846 6759 56          BYTE >56
+0847 675A 00          BYTE >00
+0848          ; Define a cell with C and D
+0849 675B 36          BYTE >36
+0850 675C 45          BYTE >45
+0851 675D 45          BYTE >45
+0852 675E 45          BYTE >45
+0853 675F 45          BYTE >45
+0854 6760 45          BYTE >45
+0855 6761 36          BYTE >36
+0856 6762 00          BYTE >00
+0857          ; Define a cell with E and F
+0858 6763 77          BYTE >77
+0859 6764 44          BYTE >44
+0860 6765 44          BYTE >44
+0861 6766 66          BYTE >66
+0862 6767 44          BYTE >44
+0863 6768 44          BYTE >44
+0864 6769 74          BYTE >74
+0865 676A 00          BYTE >00
+0866          
+0867          * Test code copied from Mini Memory
+0868 676B 31         MOVE  >0010,G@GROMMY_DAT,@GCMDBYTE    place parameter string in PAD
+     676C 00  
+     676D 10
+     676E 40  
+     676F 67  
+     6770 1B
+0869 6771 BC         ST    @>839A,@>8340                Copy command byte
+     6772 40  
+     6773 80  
+     6774 9A
+0870 6775 BC         ST    @>839A,@>8341                The second byte is its complement
+     6776 41  
+     6777 80  
+     6778 9A
+0871 6779 BA         XOR   >FF,@>8341
+     677A 41  
+     677B FF  
+0872 677C BC         ST    @>839B,@>8342                Copy p2.
+     677D 42  
+     677E 80  
+     677F 9B
+0873 6780 25         MOVE  >0010,@>8340,G@HWIF         Copy from PAD @8340 to GRAM @5FF0. Does this work? Yes!
+     6781 00  
+     6782 10
+     6783 5F  
+     6784 F0
+     6785 40  
+0874 6786 00         RTN
+0875          
+0876              copy 'bin2hex.gpl'
               > bin2hex.gpl
 0001          * bin2gpl.py output to bin2hex.gpl
 0002          * Sat Aug 10 18:25:22 2024
 0003          * Binary data
 0004          BINDATA:
-0005 6781 83    DATA >8302
-     6782 02
-0006 6783 D0    DATA >d060
-     6784 60
-0007 6785 83    DATA >835c
-     6786 5C
-0008 6787 09    DATA >0941
-     6788 41
-0009 6789 02    DATA >0221
-     678A 21
-0010 678B E0    DATA >e000
-     678C 00
-0011 678D DB    DATA >dbc1
-     678E C1
-0012 678F FF    DATA >fffe
-     6790 FE
-0013 6791 D0    DATA >d060
-     6792 60
-0014 6793 83    DATA >835c
-     6794 5C
-0015 6795 02    DATA >0241
-     6796 41
-0016 6797 0F    DATA >0f00
-     6798 00
-0017 6799 02    DATA >0221
-     679A 21
-0018 679B E0    DATA >e000
-     679C 00
-0019 679D DB    DATA >dbc1
-     679E C1
-0020 679F FF    DATA >fffe
-     67A0 FE
-0021 67A1 04    DATA >045b
-     67A2 5B
+0005 6787 83    DATA >8302
+     6788 02
+0006 6789 D0    DATA >d060
+     678A 60
+0007 678B 83    DATA >835c
+     678C 5C
+0008 678D 09    DATA >0941
+     678E 41
+0009 678F 02    DATA >0221
+     6790 21
+0010 6791 E0    DATA >e000
+     6792 00
+0011 6793 DB    DATA >dbc1
+     6794 C1
+0012 6795 FF    DATA >fffe
+     6796 FE
+0013 6797 D0    DATA >d060
+     6798 60
+0014 6799 83    DATA >835c
+     679A 5C
+0015 679B 02    DATA >0241
+     679C 41
+0016 679D 0F    DATA >0f00
+     679E 00
+0017 679F 02    DATA >0221
+     67A0 21
+0018 67A1 E0    DATA >e000
+     67A2 00
+0019 67A3 DB    DATA >dbc1
+     67A4 C1
+0020 67A5 FF    DATA >fffe
+     67A6 FE
+0021 67A7 04    DATA >045b
+     67A8 5B
 0022          BINLEN EQU >22   ; 34
 0023          
               > config.gpl
-0876          
-0877          *----------------------------------------
-0878          * VDP setup for module
-0879          *----------------------------------------
-0880          GVDPSETUP
-0881 67A3 BE      ST    >D0,V@>0300      no sprites
-     67A4 A3  
-     67A5 00
-     67A6 D0  
-0882 67A7 BE      ST    >F5,V@>0380      init color table as white on blue for all chars
-     67A8 A3  
-     67A9 80
-     67AA F5  
-0883 67AB 35      MOVE  >001F,V@>0380,V@>0381
-     67AC 00  
-     67AD 1F
+0877          
+0878          *----------------------------------------
+0879          * VDP setup for module
+0880          *----------------------------------------
+0881          GVDPSETUP
+0882 67A9 BE      ST    >D0,V@>0300      no sprites
+     67AA A3  
+     67AB 00
+     67AC D0  
+0883 67AD BE      ST    >F5,V@>0380      init color table as white on blue for all chars
      67AE A3  
-     67AF 81
-     67B0 A3  
-     67B1 80
-0884 67B2 07      ALL   >20              erase screen
-     67B3 20  
-0885 67B4 04      BACK  >F5              screen colors: white on light blue
-     67B5 F5  
-0886 67B6 00      RTN
-0887          
-0888              COPY 'screen.gpl'
+     67AF 80
+     67B0 F5  
+0884 67B1 35      MOVE  >001F,V@>0380,V@>0381
+     67B2 00  
+     67B3 1F
+     67B4 A3  
+     67B5 81
+     67B6 A3  
+     67B7 80
+0885 67B8 07      ALL   >20              erase screen
+     67B9 20  
+0886 67BA 04      BACK  >F5              screen colors: white on light blue
+     67BB F5  
+0887 67BC 00      RTN
+0888          
+0889              COPY 'screen.gpl'
               > screen.gpl
 0001          * Character definitions
-0002 67B7 00  GUDG96	BYTE >00,>00,>00,>00,>00,>00,>00,>00 ; Character 96
-     67B8 00  
-     67B9 00  
-     67BA 00  
-     67BB 00  
-     67BC 00  
-     67BD 00  
+0002 67BD 00  GUDG96	BYTE >00,>00,>00,>00,>00,>00,>00,>00 ; Character 96
      67BE 00  
-0003 67BF 00  GUDG97	BYTE >00,>00,>70,>43,>72,>42,>42,>72 ; Character 97
+     67BF 00  
      67C0 00  
-     67C1 70  
-     67C2 43  
-     67C3 72  
-     67C4 42  
-     67C5 42  
-     67C6 72  
-0004 67C7 00  GUDG98	BYTE >00,>28,>08,>A9,>2A,>2E,>2B,>29 ; Character 98
-     67C8 28  
-     67C9 08  
-     67CA A9  
-     67CB 2A  
-     67CC 2E  
-     67CD 2B  
-     67CE 29  
-0005 67CF 00  GUDG99	BYTE >00,>00,>0F,>09,>09,>0E,>08,>08 ; Character 99
-     67D0 00  
-     67D1 0F  
-     67D2 09  
-     67D3 09  
-     67D4 0E  
-     67D5 08  
-     67D6 08  
-0006 67D7 00  GUDG100	BYTE >00,>40,>00,>46,>49,>4F,>48,>46 ; Character 100
-     67D8 40  
-     67D9 00  
-     67DA 46  
-     67DB 49  
-     67DC 4F  
-     67DD 48  
-     67DE 46  
-0007 67DF 00  GUDG101	BYTE >00,>41,>41,>79,>49,>49,>49,>49 ; Character 101
-     67E0 41  
-     67E1 41  
-     67E2 79  
-     67E3 49  
-     67E4 49  
-     67E5 49  
-     67E6 49  
-0008 67E7 00  GUDG102	BYTE >00,>40,>40,>1C,>10,>0C,>06,>1C ; Character 102
-     67E8 40  
-     67E9 40  
-     67EA 1C  
-     67EB 10  
-     67EC 0C  
-     67ED 06  
-     67EE 1C  
-0009 67EF 00  GUDG103	BYTE >00,>00,>00,>00,>00,>00,>1C,>3F ; Character 103
-     67F0 00  
-     67F1 00  
-     67F2 00  
-     67F3 00  
-     67F4 00  
-     67F5 1C  
-     67F6 3F  
-0010 67F7 00  GUDG104	BYTE >00,>00,>00,>00,>00,>00,>00,>3F ; Character 104
+     67C1 00  
+     67C2 00  
+     67C3 00  
+     67C4 00  
+0003 67C5 00  GUDG97	BYTE >00,>00,>70,>43,>72,>42,>42,>72 ; Character 97
+     67C6 00  
+     67C7 70  
+     67C8 43  
+     67C9 72  
+     67CA 42  
+     67CB 42  
+     67CC 72  
+0004 67CD 00  GUDG98	BYTE >00,>28,>08,>A9,>2A,>2E,>2B,>29 ; Character 98
+     67CE 28  
+     67CF 08  
+     67D0 A9  
+     67D1 2A  
+     67D2 2E  
+     67D3 2B  
+     67D4 29  
+0005 67D5 00  GUDG99	BYTE >00,>00,>0F,>09,>09,>0E,>08,>08 ; Character 99
+     67D6 00  
+     67D7 0F  
+     67D8 09  
+     67D9 09  
+     67DA 0E  
+     67DB 08  
+     67DC 08  
+0006 67DD 00  GUDG100	BYTE >00,>40,>00,>46,>49,>4F,>48,>46 ; Character 100
+     67DE 40  
+     67DF 00  
+     67E0 46  
+     67E1 49  
+     67E2 4F  
+     67E3 48  
+     67E4 46  
+0007 67E5 00  GUDG101	BYTE >00,>41,>41,>79,>49,>49,>49,>49 ; Character 101
+     67E6 41  
+     67E7 41  
+     67E8 79  
+     67E9 49  
+     67EA 49  
+     67EB 49  
+     67EC 49  
+0008 67ED 00  GUDG102	BYTE >00,>40,>40,>1C,>10,>0C,>06,>1C ; Character 102
+     67EE 40  
+     67EF 40  
+     67F0 1C  
+     67F1 10  
+     67F2 0C  
+     67F3 06  
+     67F4 1C  
+0009 67F5 00  GUDG103	BYTE >00,>00,>00,>00,>00,>00,>1C,>3F ; Character 103
+     67F6 00  
+     67F7 00  
      67F8 00  
      67F9 00  
      67FA 00  
-     67FB 00  
-     67FC 00  
-     67FD 00  
-     67FE 3F  
-0011 67FF 00  GUDG105	BYTE >00,>00,>00,>00,>00,>00,>00,>9C ; Character 105
+     67FB 1C  
+     67FC 3F  
+0010 67FD 00  GUDG104	BYTE >00,>00,>00,>00,>00,>00,>00,>3F ; Character 104
+     67FE 00  
+     67FF 00  
      6800 00  
      6801 00  
      6802 00  
      6803 00  
-     6804 00  
-     6805 00  
-     6806 9C  
-0012 6807 00  GUDG106	BYTE >00,>00,>00,>00,>00,>00,>07,>3F ; Character 106
+     6804 3F  
+0011 6805 00  GUDG105	BYTE >00,>00,>00,>00,>00,>00,>00,>9C ; Character 105
+     6806 00  
+     6807 00  
      6808 00  
      6809 00  
      680A 00  
      680B 00  
-     680C 00  
-     680D 07  
-     680E 3F  
-0013 680F 00  GUDG107	BYTE >00,>00,>00,>00,>00,>00,>00,>F0 ; Character 107
+     680C 9C  
+0012 680D 00  GUDG106	BYTE >00,>00,>00,>00,>00,>00,>07,>3F ; Character 106
+     680E 00  
+     680F 00  
      6810 00  
      6811 00  
      6812 00  
-     6813 00  
-     6814 00  
-     6815 00  
-     6816 F0  
-0014 6817 00  GUDG108	BYTE >00,>00,>00,>00,>00,>00,>06,>9F ; Character 108
+     6813 07  
+     6814 3F  
+0013 6815 00  GUDG107	BYTE >00,>00,>00,>00,>00,>00,>00,>F0 ; Character 107
+     6816 00  
+     6817 00  
      6818 00  
      6819 00  
      681A 00  
      681B 00  
-     681C 00  
-     681D 06  
-     681E 9F  
-0015 681F 00  GUDG109	BYTE >00,>00,>00,>00,>00,>00,>03,>8F ; Character 109
+     681C F0  
+0014 681D 00  GUDG108	BYTE >00,>00,>00,>00,>00,>00,>06,>9F ; Character 108
+     681E 00  
+     681F 00  
      6820 00  
      6821 00  
      6822 00  
-     6823 00  
-     6824 00  
-     6825 03  
-     6826 8F  
-0016 6827 00  GUDG110	BYTE >00,>00,>00,>00,>00,>00,>00,>C7 ; Character 110
+     6823 06  
+     6824 9F  
+0015 6825 00  GUDG109	BYTE >00,>00,>00,>00,>00,>00,>03,>8F ; Character 109
+     6826 00  
+     6827 00  
      6828 00  
      6829 00  
      682A 00  
-     682B 00  
-     682C 00  
-     682D 00  
-     682E C7  
-0017 682F 00  GUDG111	BYTE >00,>00,>00,>00,>00,>00,>00,>F3 ; Character 111
+     682B 03  
+     682C 8F  
+0016 682D 00  GUDG110	BYTE >00,>00,>00,>00,>00,>00,>00,>C7 ; Character 110
+     682E 00  
+     682F 00  
      6830 00  
      6831 00  
      6832 00  
      6833 00  
-     6834 00  
-     6835 00  
-     6836 F3  
-0018 6837 00  GUDG112	BYTE >00,>00,>00,>00,>00,>00,>C0,>F1 ; Character 112
+     6834 C7  
+0017 6835 00  GUDG111	BYTE >00,>00,>00,>00,>00,>00,>00,>F3 ; Character 111
+     6836 00  
+     6837 00  
      6838 00  
      6839 00  
      683A 00  
      683B 00  
-     683C 00  
-     683D C0  
-     683E F1  
-0019 683F 00  GUDG113	BYTE >00,>00,>00,>00,>00,>00,>60,>F8 ; Character 113
+     683C F3  
+0018 683D 00  GUDG112	BYTE >00,>00,>00,>00,>00,>00,>C0,>F1 ; Character 112
+     683E 00  
+     683F 00  
      6840 00  
      6841 00  
      6842 00  
-     6843 00  
-     6844 00  
-     6845 60  
-     6846 F8  
-0020 6847 00  GUDG114	BYTE >00,>00,>00,>00,>00,>00,>00,>FC ; Character 114
+     6843 C0  
+     6844 F1  
+0019 6845 00  GUDG113	BYTE >00,>00,>00,>00,>00,>00,>60,>F8 ; Character 113
+     6846 00  
+     6847 00  
      6848 00  
      6849 00  
      684A 00  
-     684B 00  
-     684C 00  
-     684D 00  
-     684E FC  
-0021 684F 00  GUDG115	BYTE >00,>03,>0F,>1F,>3F,>3F,>7F,>7E ; Character 115
-     6850 03  
-     6851 0F  
-     6852 1F  
-     6853 3F  
-     6854 3F  
-     6855 7F  
-     6856 7E  
-0022 6857 00  GUDG116	BYTE >00,>F0,>FC,>FE,>FF,>FF,>3F,>3F ; Character 116
-     6858 F0  
-     6859 FC  
-     685A FE  
-     685B FF  
-     685C FF  
-     685D 3F  
-     685E 3F  
-0023 685F 00  GUDG117	BYTE >00,>00,>00,>00,>00,>80,>80,>80 ; Character 117
-     6860 00  
-     6861 00  
-     6862 00  
-     6863 00  
-     6864 80  
-     6865 80  
-     6866 80  
-0024 6867 7F  GUDG118	BYTE >7F,>FF,>FF,>FE,>FE,>FE,>FE,>FE ; Character 118
-     6868 FF  
-     6869 FF  
-     686A FE  
-     686B FE  
-     686C FE  
-     686D FE  
-     686E FE  
-0025 686F FF  GUDG119	BYTE >FF,>FF,>FF,>7F,>7F,>7F,>7F,>7F ; Character 119
-     6870 FF  
-     6871 FF  
-     6872 7F  
-     6873 7F  
-     6874 7F  
-     6875 7F  
-     6876 7F  
-0026 6877 3F  GUDG120	BYTE >3F,>3F,>3F,>3F,>3F,>3F,>3F,>3F ; Character 120
-     6878 3F  
-     6879 3F  
-     687A 3F  
-     687B 3F  
-     687C 3F  
-     687D 3F  
+     684B 60  
+     684C F8  
+0020 684D 00  GUDG114	BYTE >00,>00,>00,>00,>00,>00,>00,>FC ; Character 114
+     684E 00  
+     684F 00  
+     6850 00  
+     6851 00  
+     6852 00  
+     6853 00  
+     6854 FC  
+0021 6855 00  GUDG115	BYTE >00,>03,>0F,>1F,>3F,>3F,>7F,>7E ; Character 115
+     6856 03  
+     6857 0F  
+     6858 1F  
+     6859 3F  
+     685A 3F  
+     685B 7F  
+     685C 7E  
+0022 685D 00  GUDG116	BYTE >00,>F0,>FC,>FE,>FF,>FF,>3F,>3F ; Character 116
+     685E F0  
+     685F FC  
+     6860 FE  
+     6861 FF  
+     6862 FF  
+     6863 3F  
+     6864 3F  
+0023 6865 00  GUDG117	BYTE >00,>00,>00,>00,>00,>80,>80,>80 ; Character 117
+     6866 00  
+     6867 00  
+     6868 00  
+     6869 00  
+     686A 80  
+     686B 80  
+     686C 80  
+0024 686D 7F  GUDG118	BYTE >7F,>FF,>FF,>FE,>FE,>FE,>FE,>FE ; Character 118
+     686E FF  
+     686F FF  
+     6870 FE  
+     6871 FE  
+     6872 FE  
+     6873 FE  
+     6874 FE  
+0025 6875 FF  GUDG119	BYTE >FF,>FF,>FF,>7F,>7F,>7F,>7F,>7F ; Character 119
+     6876 FF  
+     6877 FF  
+     6878 7F  
+     6879 7F  
+     687A 7F  
+     687B 7F  
+     687C 7F  
+0026 687D 3F  GUDG120	BYTE >3F,>3F,>3F,>3F,>3F,>3F,>3F,>3F ; Character 120
      687E 3F  
-0027 687F BC  GUDG121	BYTE >BC,>FC,>FC,>FD,>FD,>FD,>F9,>C1 ; Character 121
-     6880 FC  
-     6881 FC  
-     6882 FD  
-     6883 FD  
-     6884 FD  
-     6885 F9  
-     6886 C1  
-0028 6887 7F  GUDG122	BYTE >7F,>FF,>FF,>FC,>FC,>FC,>FC,>FC ; Character 122
-     6888 FF  
-     6889 FF  
-     688A FC  
-     688B FC  
-     688C FC  
-     688D FC  
-     688E FC  
-0029 688F F8  GUDG123	BYTE >F8,>FC,>FE,>FE,>FE,>FE,>FE,>FE ; Character 123
+     687F 3F  
+     6880 3F  
+     6881 3F  
+     6882 3F  
+     6883 3F  
+     6884 3F  
+0027 6885 BC  GUDG121	BYTE >BC,>FC,>FC,>FD,>FD,>FD,>F9,>C1 ; Character 121
+     6886 FC  
+     6887 FC  
+     6888 FD  
+     6889 FD  
+     688A FD  
+     688B F9  
+     688C C1  
+0028 688D 7F  GUDG122	BYTE >7F,>FF,>FF,>FC,>FC,>FC,>FC,>FC ; Character 122
+     688E FF  
+     688F FF  
      6890 FC  
-     6891 FE  
-     6892 FE  
-     6893 FE  
-     6894 FE  
-     6895 FE  
-     6896 FE  
-0030 6897 FF  GUDG124	BYTE >FF,>FF,>FF,>9F,>9F,>9F,>9F,>9F ; Character 124
-     6898 FF  
-     6899 FF  
-     689A 9F  
-     689B 9F  
-     689C 9F  
-     689D 9F  
-     689E 9F  
-0031 689F DF  GUDG125	BYTE >DF,>FF,>FF,>E7,>C7,>C7,>C7,>C7 ; Character 125
-     68A0 FF  
-     68A1 FF  
-     68A2 E7  
-     68A3 C7  
-     68A4 C7  
-     68A5 C7  
-     68A6 C7  
-0032 68A7 E7  GUDG126	BYTE >E7,>E7,>E7,>F7,>F7,>F7,>F7,>F7 ; Character 126
+     6891 FC  
+     6892 FC  
+     6893 FC  
+     6894 FC  
+0029 6895 F8  GUDG123	BYTE >F8,>FC,>FE,>FE,>FE,>FE,>FE,>FE ; Character 123
+     6896 FC  
+     6897 FE  
+     6898 FE  
+     6899 FE  
+     689A FE  
+     689B FE  
+     689C FE  
+0030 689D FF  GUDG124	BYTE >FF,>FF,>FF,>9F,>9F,>9F,>9F,>9F ; Character 124
+     689E FF  
+     689F FF  
+     68A0 9F  
+     68A1 9F  
+     68A2 9F  
+     68A3 9F  
+     68A4 9F  
+0031 68A5 DF  GUDG125	BYTE >DF,>FF,>FF,>E7,>C7,>C7,>C7,>C7 ; Character 125
+     68A6 FF  
+     68A7 FF  
      68A8 E7  
-     68A9 E7  
-     68AA F7  
-     68AB F7  
-     68AC F7  
-     68AD F7  
-     68AE F7  
-0033 68AF FF  GUDG127	BYTE >FF,>FF,>FF,>F3,>F3,>F3,>F3,>F3 ; Character 127
-     68B0 FF  
-     68B1 FF  
-     68B2 F3  
-     68B3 F3  
-     68B4 F3  
-     68B5 F3  
-     68B6 F3  
-0034 68B7 FB  GUDG128	BYTE >FB,>FF,>FF,>FC,>F8,>F8,>F8,>F8 ; Character 128
-     68B8 FF  
-     68B9 FF  
-     68BA FC  
-     68BB F8  
-     68BC F8  
-     68BD F8  
-     68BE F8  
-0035 68BF FC  GUDG129	BYTE >FC,>FC,>FC,>FE,>FE,>FE,>FE,>FE ; Character 129
+     68A9 C7  
+     68AA C7  
+     68AB C7  
+     68AC C7  
+0032 68AD E7  GUDG126	BYTE >E7,>E7,>E7,>F7,>F7,>F7,>F7,>F7 ; Character 126
+     68AE E7  
+     68AF E7  
+     68B0 F7  
+     68B1 F7  
+     68B2 F7  
+     68B3 F7  
+     68B4 F7  
+0033 68B5 FF  GUDG127	BYTE >FF,>FF,>FF,>F3,>F3,>F3,>F3,>F3 ; Character 127
+     68B6 FF  
+     68B7 FF  
+     68B8 F3  
+     68B9 F3  
+     68BA F3  
+     68BB F3  
+     68BC F3  
+0034 68BD FB  GUDG128	BYTE >FB,>FF,>FF,>FC,>F8,>F8,>F8,>F8 ; Character 128
+     68BE FF  
+     68BF FF  
      68C0 FC  
-     68C1 FC  
-     68C2 FE  
-     68C3 FE  
-     68C4 FE  
-     68C5 FE  
-     68C6 FE  
-0036 68C7 FE  GUDG130	BYTE >FE,>FE,>7E,>7E,>7E,>7E,>7E,>3F ; Character 130
+     68C1 F8  
+     68C2 F8  
+     68C3 F8  
+     68C4 F8  
+0035 68C5 FC  GUDG129	BYTE >FC,>FC,>FC,>FE,>FE,>FE,>FE,>FE ; Character 129
+     68C6 FC  
+     68C7 FC  
      68C8 FE  
-     68C9 7E  
-     68CA 7E  
-     68CB 7E  
-     68CC 7E  
-     68CD 7E  
-     68CE 3F  
-0037 68CF 3F  GUDG131	BYTE >3F,>7F,>7F,>7F,>7E,>7E,>7E,>7E ; Character 131
-     68D0 7F  
-     68D1 7F  
-     68D2 7F  
+     68C9 FE  
+     68CA FE  
+     68CB FE  
+     68CC FE  
+0036 68CD FE  GUDG130	BYTE >FE,>FE,>7E,>7E,>7E,>7E,>7E,>3F ; Character 130
+     68CE FE  
+     68CF 7E  
+     68D0 7E  
+     68D1 7E  
+     68D2 7E  
      68D3 7E  
-     68D4 7E  
-     68D5 7E  
-     68D6 7E  
-0038 68D7 7E  GUDG132	BYTE >7E,>7E,>7E,>00,>00,>00,>00,>01 ; Character 132
-     68D8 7E  
+     68D4 3F  
+0037 68D5 3F  GUDG131	BYTE >3F,>7F,>7F,>7F,>7E,>7E,>7E,>7E ; Character 131
+     68D6 7F  
+     68D7 7F  
+     68D8 7F  
      68D9 7E  
-     68DA 00  
-     68DB 00  
-     68DC 00  
-     68DD 00  
-     68DE 01  
-0039 68DF 3F  GUDG133	BYTE >3F,>3F,>3F,>7F,>7F,>FF,>FF,>FE ; Character 133
-     68E0 3F  
-     68E1 3F  
-     68E2 7F  
-     68E3 7F  
-     68E4 FF  
-     68E5 FF  
-     68E6 FE  
-0040 68E7 80  GUDG134	BYTE >80,>80,>80,>80,>00,>00,>00,>00 ; Character 134
-     68E8 80  
-     68E9 80  
-     68EA 80  
-     68EB 00  
-     68EC 00  
-     68ED 00  
-     68EE 00  
-0041 68EF FE  GUDG135	BYTE >FE,>FE,>FE,>FE,>FE,>FE,>FE,>FF ; Character 135
-     68F0 FE  
-     68F1 FE  
-     68F2 FE  
-     68F3 FE  
-     68F4 FE  
-     68F5 FE  
-     68F6 FF  
-0042 68F7 7F  GUDG136	BYTE >7F,>7F,>7F,>7F,>7F,>7F,>7F,>FF ; Character 136
-     68F8 7F  
-     68F9 7F  
-     68FA 7F  
-     68FB 7F  
-     68FC 7F  
-     68FD 7F  
-     68FE FF  
-0043 68FF C1  GUDG137	BYTE >C1,>81,>81,>81,>81,>81,>81,>81 ; Character 137
-     6900 81  
-     6901 81  
-     6902 81  
-     6903 81  
-     6904 81  
-     6905 81  
+     68DA 7E  
+     68DB 7E  
+     68DC 7E  
+0038 68DD 7E  GUDG132	BYTE >7E,>7E,>7E,>00,>00,>00,>00,>01 ; Character 132
+     68DE 7E  
+     68DF 7E  
+     68E0 00  
+     68E1 00  
+     68E2 00  
+     68E3 00  
+     68E4 01  
+0039 68E5 3F  GUDG133	BYTE >3F,>3F,>3F,>7F,>7F,>FF,>FF,>FE ; Character 133
+     68E6 3F  
+     68E7 3F  
+     68E8 7F  
+     68E9 7F  
+     68EA FF  
+     68EB FF  
+     68EC FE  
+0040 68ED 80  GUDG134	BYTE >80,>80,>80,>80,>00,>00,>00,>00 ; Character 134
+     68EE 80  
+     68EF 80  
+     68F0 80  
+     68F1 00  
+     68F2 00  
+     68F3 00  
+     68F4 00  
+0041 68F5 FE  GUDG135	BYTE >FE,>FE,>FE,>FE,>FE,>FE,>FE,>FF ; Character 135
+     68F6 FE  
+     68F7 FE  
+     68F8 FE  
+     68F9 FE  
+     68FA FE  
+     68FB FE  
+     68FC FF  
+0042 68FD 7F  GUDG136	BYTE >7F,>7F,>7F,>7F,>7F,>7F,>7F,>FF ; Character 136
+     68FE 7F  
+     68FF 7F  
+     6900 7F  
+     6901 7F  
+     6902 7F  
+     6903 7F  
+     6904 FF  
+0043 6905 C1  GUDG137	BYTE >C1,>81,>81,>81,>81,>81,>81,>81 ; Character 137
      6906 81  
-0044 6907 FC  GUDG138	BYTE >FC,>FC,>FC,>FC,>FC,>FC,>FC,>FC ; Character 138
-     6908 FC  
-     6909 FC  
-     690A FC  
-     690B FC  
-     690C FC  
-     690D FC  
+     6907 81  
+     6908 81  
+     6909 81  
+     690A 81  
+     690B 81  
+     690C 81  
+0044 690D FC  GUDG138	BYTE >FC,>FC,>FC,>FC,>FC,>FC,>FC,>FC ; Character 138
      690E FC  
-0045 690F FE  GUDG139	BYTE >FE,>FE,>FE,>FE,>FE,>FE,>FE,>FE ; Character 139
-     6910 FE  
-     6911 FE  
-     6912 FE  
-     6913 FE  
-     6914 FE  
-     6915 FE  
+     690F FC  
+     6910 FC  
+     6911 FC  
+     6912 FC  
+     6913 FC  
+     6914 FC  
+0045 6915 FE  GUDG139	BYTE >FE,>FE,>FE,>FE,>FE,>FE,>FE,>FE ; Character 139
      6916 FE  
-0046 6917 9F  GUDG140	BYTE >9F,>9F,>9F,>9F,>9F,>9F,>9F,>9F ; Character 140
-     6918 9F  
-     6919 9F  
-     691A 9F  
-     691B 9F  
-     691C 9F  
-     691D 9F  
+     6917 FE  
+     6918 FE  
+     6919 FE  
+     691A FE  
+     691B FE  
+     691C FE  
+0046 691D 9F  GUDG140	BYTE >9F,>9F,>9F,>9F,>9F,>9F,>9F,>9F ; Character 140
      691E 9F  
-0047 691F C7  GUDG141	BYTE >C7,>C7,>C7,>C7,>C7,>C7,>C7,>C7 ; Character 141
-     6920 C7  
-     6921 C7  
-     6922 C7  
-     6923 C7  
-     6924 C7  
-     6925 C7  
+     691F 9F  
+     6920 9F  
+     6921 9F  
+     6922 9F  
+     6923 9F  
+     6924 9F  
+0047 6925 C7  GUDG141	BYTE >C7,>C7,>C7,>C7,>C7,>C7,>C7,>C7 ; Character 141
      6926 C7  
-0048 6927 F7  GUDG142	BYTE >F7,>F7,>F7,>F7,>F7,>F7,>F7,>F7 ; Character 142
-     6928 F7  
-     6929 F7  
-     692A F7  
-     692B F7  
-     692C F7  
-     692D F7  
+     6927 C7  
+     6928 C7  
+     6929 C7  
+     692A C7  
+     692B C7  
+     692C C7  
+0048 692D F7  GUDG142	BYTE >F7,>F7,>F7,>F7,>F7,>F7,>F7,>F7 ; Character 142
      692E F7  
-0049 692F F3  GUDG143	BYTE >F3,>F3,>F3,>F3,>F3,>F3,>F3,>F3 ; Character 143
-     6930 F3  
-     6931 F3  
-     6932 F3  
-     6933 F3  
-     6934 F3  
-     6935 F3  
+     692F F7  
+     6930 F7  
+     6931 F7  
+     6932 F7  
+     6933 F7  
+     6934 F7  
+0049 6935 F3  GUDG143	BYTE >F3,>F3,>F3,>F3,>F3,>F3,>F3,>F3 ; Character 143
      6936 F3  
-0050 6937 F8  GUDG144	BYTE >F8,>F8,>F8,>F8,>F8,>F8,>F8,>F8 ; Character 144
-     6938 F8  
-     6939 F8  
-     693A F8  
-     693B F8  
-     693C F8  
-     693D F8  
+     6937 F3  
+     6938 F3  
+     6939 F3  
+     693A F3  
+     693B F3  
+     693C F3  
+0050 693D F8  GUDG144	BYTE >F8,>F8,>F8,>F8,>F8,>F8,>F8,>F8 ; Character 144
      693E F8  
-0051 693F 3F  GUDG145	BYTE >3F,>3F,>3F,>3F,>1F,>1F,>1F,>1F ; Character 145
-     6940 3F  
-     6941 3F  
-     6942 3F  
-     6943 1F  
-     6944 1F  
-     6945 1F  
-     6946 1F  
-0052 6947 7E  GUDG146	BYTE >7E,>7E,>7E,>7E,>FC,>FC,>FC,>FC ; Character 146
-     6948 7E  
-     6949 7E  
-     694A 7E  
-     694B FC  
-     694C FC  
-     694D FC  
-     694E FC  
-0053 694F 01  GUDG147	BYTE >01,>03,>07,>07,>0F,>0F,>1F,>3F ; Character 147
-     6950 03  
-     6951 07  
-     6952 07  
-     6953 0F  
-     6954 0F  
-     6955 1F  
-     6956 3F  
-0054 6957 FC  GUDG148	BYTE >FC,>FC,>F8,>F8,>F0,>E0,>E0,>C0 ; Character 148
-     6958 FC  
-     6959 F8  
-     695A F8  
-     695B F0  
-     695C E0  
-     695D E0  
-     695E C0  
-0055 695F 7F  GUDG149	BYTE >7F,>7F,>3F,>00,>FE,>FE,>FF,>7F ; Character 149
-     6960 7F  
-     6961 3F  
-     6962 00  
-     6963 FE  
-     6964 FE  
-     6965 FF  
+     693F F8  
+     6940 F8  
+     6941 F8  
+     6942 F8  
+     6943 F8  
+     6944 F8  
+0051 6945 3F  GUDG145	BYTE >3F,>3F,>3F,>3F,>1F,>1F,>1F,>1F ; Character 145
+     6946 3F  
+     6947 3F  
+     6948 3F  
+     6949 1F  
+     694A 1F  
+     694B 1F  
+     694C 1F  
+0052 694D 7E  GUDG146	BYTE >7E,>7E,>7E,>7E,>FC,>FC,>FC,>FC ; Character 146
+     694E 7E  
+     694F 7E  
+     6950 7E  
+     6951 FC  
+     6952 FC  
+     6953 FC  
+     6954 FC  
+0053 6955 01  GUDG147	BYTE >01,>03,>07,>07,>0F,>0F,>1F,>3F ; Character 147
+     6956 03  
+     6957 07  
+     6958 07  
+     6959 0F  
+     695A 0F  
+     695B 1F  
+     695C 3F  
+0054 695D FC  GUDG148	BYTE >FC,>FC,>F8,>F8,>F0,>E0,>E0,>C0 ; Character 148
+     695E FC  
+     695F F8  
+     6960 F8  
+     6961 F0  
+     6962 E0  
+     6963 E0  
+     6964 C0  
+0055 6965 7F  GUDG149	BYTE >7F,>7F,>3F,>00,>FE,>FE,>FF,>7F ; Character 149
      6966 7F  
-0056 6967 FF  GUDG150	BYTE >FF,>FF,>7F,>7F,>7F,>7F,>FF,>FE ; Character 150
-     6968 FF  
-     6969 7F  
-     696A 7F  
-     696B 7F  
+     6967 3F  
+     6968 00  
+     6969 FE  
+     696A FE  
+     696B FF  
      696C 7F  
-     696D FF  
-     696E FE  
-0057 696F 3F  GUDG151	BYTE >3F,>3F,>3F,>3F,>3F,>3F,>00,>00 ; Character 151
-     6970 3F  
-     6971 3F  
-     6972 3F  
-     6973 3F  
-     6974 3F  
-     6975 00  
-     6976 00  
-0058 6977 81  GUDG152	BYTE >81,>81,>80,>80,>80,>80,>00,>00 ; Character 152
-     6978 81  
-     6979 80  
-     697A 80  
-     697B 80  
-     697C 80  
-     697D 00  
-     697E 00  
-0059 697F FC  GUDG153	BYTE >FC,>FC,>FF,>FF,>7F,>1F,>00,>00 ; Character 153
-     6980 FC  
-     6981 FF  
-     6982 FF  
-     6983 7F  
-     6984 1F  
-     6985 00  
-     6986 00  
-0060 6987 FE  GUDG154	BYTE >FE,>FE,>FC,>FC,>F8,>E0,>00,>00 ; Character 154
-     6988 FE  
-     6989 FC  
-     698A FC  
-     698B F8  
-     698C E0  
-     698D 00  
-     698E 00  
-0061 698F 9F  GUDG155	BYTE >9F,>9F,>9F,>9F,>9F,>9F,>00,>00 ; Character 155
-     6990 9F  
-     6991 9F  
-     6992 9F  
-     6993 9F  
-     6994 9F  
-     6995 00  
-     6996 00  
-0062 6997 C7  GUDG156	BYTE >C7,>C7,>C7,>C7,>C7,>C7,>00,>00 ; Character 156
-     6998 C7  
-     6999 C7  
-     699A C7  
-     699B C7  
-     699C C7  
-     699D 00  
-     699E 00  
-0063 699F F7  GUDG157	BYTE >F7,>F7,>F7,>F7,>F7,>F7,>00,>00 ; Character 157
-     69A0 F7  
-     69A1 F7  
-     69A2 F7  
-     69A3 F7  
-     69A4 F7  
-     69A5 00  
-     69A6 00  
-0064 69A7 F3  GUDG158	BYTE >F3,>F3,>F3,>F3,>F3,>F3,>00,>00 ; Character 158
-     69A8 F3  
-     69A9 F3  
-     69AA F3  
-     69AB F3  
-     69AC F3  
-     69AD 00  
-     69AE 00  
-0065 69AF F8  GUDG159	BYTE >F8,>F8,>F8,>F8,>F8,>F8,>00,>00 ; Character 159
-     69B0 F8  
-     69B1 F8  
-     69B2 F8  
-     69B3 F8  
-     69B4 F8  
-     69B5 00  
-     69B6 00  
-0066 69B7 FE  GUDG160	BYTE >FE,>FE,>FE,>FE,>FE,>FE,>00,>00 ; Character 160
-     69B8 FE  
-     69B9 FE  
-     69BA FE  
-     69BB FE  
-     69BC FE  
-     69BD 00  
-     69BE 00  
-0067 69BF 1F  GUDG161	BYTE >1F,>0F,>0F,>0F,>0F,>1F,>3F,>3F ; Character 161
-     69C0 0F  
-     69C1 0F  
-     69C2 0F  
-     69C3 0F  
-     69C4 1F  
-     69C5 3F  
-     69C6 3F  
-0068 69C7 FC  GUDG162	BYTE >FC,>FC,>FC,>FC,>F8,>F8,>F8,>F0 ; Character 162
-     69C8 FC  
-     69C9 FC  
-     69CA FC  
-     69CB F8  
-     69CC F8  
-     69CD F8  
-     69CE F0  
-0069 69CF 3F  GUDG163	BYTE >3F,>7F,>7F,>7F,>7F,>7F,>00,>00 ; Character 163
-     69D0 7F  
-     69D1 7F  
-     69D2 7F  
-     69D3 7F  
-     69D4 7F  
-     69D5 00  
-     69D6 00  
-0070 69D7 80  GUDG164	BYTE >80,>FF,>FF,>FF,>FF,>FF,>00,>00 ; Character 164
-     69D8 FF  
-     69D9 FF  
-     69DA FF  
-     69DB FF  
-     69DC FF  
-     69DD 00  
-     69DE 00  
-0071 69DF 00  GUDG165	BYTE >00,>00,>80,>80,>80,>80,>00,>00 ; Character 165
-     69E0 00  
-     69E1 80  
-     69E2 80  
-     69E3 80  
-     69E4 80  
-     69E5 00  
+0056 696D FF  GUDG150	BYTE >FF,>FF,>7F,>7F,>7F,>7F,>FF,>FE ; Character 150
+     696E FF  
+     696F 7F  
+     6970 7F  
+     6971 7F  
+     6972 7F  
+     6973 FF  
+     6974 FE  
+0057 6975 3F  GUDG151	BYTE >3F,>3F,>3F,>3F,>3F,>3F,>00,>00 ; Character 151
+     6976 3F  
+     6977 3F  
+     6978 3F  
+     6979 3F  
+     697A 3F  
+     697B 00  
+     697C 00  
+0058 697D 81  GUDG152	BYTE >81,>81,>80,>80,>80,>80,>00,>00 ; Character 152
+     697E 81  
+     697F 80  
+     6980 80  
+     6981 80  
+     6982 80  
+     6983 00  
+     6984 00  
+0059 6985 FC  GUDG153	BYTE >FC,>FC,>FF,>FF,>7F,>1F,>00,>00 ; Character 153
+     6986 FC  
+     6987 FF  
+     6988 FF  
+     6989 7F  
+     698A 1F  
+     698B 00  
+     698C 00  
+0060 698D FE  GUDG154	BYTE >FE,>FE,>FC,>FC,>F8,>E0,>00,>00 ; Character 154
+     698E FE  
+     698F FC  
+     6990 FC  
+     6991 F8  
+     6992 E0  
+     6993 00  
+     6994 00  
+0061 6995 9F  GUDG155	BYTE >9F,>9F,>9F,>9F,>9F,>9F,>00,>00 ; Character 155
+     6996 9F  
+     6997 9F  
+     6998 9F  
+     6999 9F  
+     699A 9F  
+     699B 00  
+     699C 00  
+0062 699D C7  GUDG156	BYTE >C7,>C7,>C7,>C7,>C7,>C7,>00,>00 ; Character 156
+     699E C7  
+     699F C7  
+     69A0 C7  
+     69A1 C7  
+     69A2 C7  
+     69A3 00  
+     69A4 00  
+0063 69A5 F7  GUDG157	BYTE >F7,>F7,>F7,>F7,>F7,>F7,>00,>00 ; Character 157
+     69A6 F7  
+     69A7 F7  
+     69A8 F7  
+     69A9 F7  
+     69AA F7  
+     69AB 00  
+     69AC 00  
+0064 69AD F3  GUDG158	BYTE >F3,>F3,>F3,>F3,>F3,>F3,>00,>00 ; Character 158
+     69AE F3  
+     69AF F3  
+     69B0 F3  
+     69B1 F3  
+     69B2 F3  
+     69B3 00  
+     69B4 00  
+0065 69B5 F8  GUDG159	BYTE >F8,>F8,>F8,>F8,>F8,>F8,>00,>00 ; Character 159
+     69B6 F8  
+     69B7 F8  
+     69B8 F8  
+     69B9 F8  
+     69BA F8  
+     69BB 00  
+     69BC 00  
+0066 69BD FE  GUDG160	BYTE >FE,>FE,>FE,>FE,>FE,>FE,>00,>00 ; Character 160
+     69BE FE  
+     69BF FE  
+     69C0 FE  
+     69C1 FE  
+     69C2 FE  
+     69C3 00  
+     69C4 00  
+0067 69C5 1F  GUDG161	BYTE >1F,>0F,>0F,>0F,>0F,>1F,>3F,>3F ; Character 161
+     69C6 0F  
+     69C7 0F  
+     69C8 0F  
+     69C9 0F  
+     69CA 1F  
+     69CB 3F  
+     69CC 3F  
+0068 69CD FC  GUDG162	BYTE >FC,>FC,>FC,>FC,>F8,>F8,>F8,>F0 ; Character 162
+     69CE FC  
+     69CF FC  
+     69D0 FC  
+     69D1 F8  
+     69D2 F8  
+     69D3 F8  
+     69D4 F0  
+0069 69D5 3F  GUDG163	BYTE >3F,>7F,>7F,>7F,>7F,>7F,>00,>00 ; Character 163
+     69D6 7F  
+     69D7 7F  
+     69D8 7F  
+     69D9 7F  
+     69DA 7F  
+     69DB 00  
+     69DC 00  
+0070 69DD 80  GUDG164	BYTE >80,>FF,>FF,>FF,>FF,>FF,>00,>00 ; Character 164
+     69DE FF  
+     69DF FF  
+     69E0 FF  
+     69E1 FF  
+     69E2 FF  
+     69E3 00  
+     69E4 00  
+0071 69E5 00  GUDG165	BYTE >00,>00,>80,>80,>80,>80,>00,>00 ; Character 165
      69E6 00  
-0072 69E7 3F  GUDG166	BYTE >3F,>0F,>00,>00,>00,>00,>00,>00 ; Character 166
-     69E8 0F  
-     69E9 00  
-     69EA 00  
+     69E7 80  
+     69E8 80  
+     69E9 80  
+     69EA 80  
      69EB 00  
      69EC 00  
-     69ED 00  
-     69EE 00  
-0073 69EF FC  GUDG167	BYTE >FC,>F0,>00,>00,>00,>00,>00,>00 ; Character 167
-     69F0 F0  
+0072 69ED 3F  GUDG166	BYTE >3F,>0F,>00,>00,>00,>00,>00,>00 ; Character 166
+     69EE 0F  
+     69EF 00  
+     69F0 00  
      69F1 00  
      69F2 00  
      69F3 00  
      69F4 00  
-     69F5 00  
-     69F6 00  
-0074 69F7 3F  GUDG168	BYTE >3F,>00,>00,>00,>00,>00,>00,>00 ; Character 168
+0073 69F5 FC  GUDG167	BYTE >FC,>F0,>00,>00,>00,>00,>00,>00 ; Character 167
+     69F6 F0  
+     69F7 00  
      69F8 00  
      69F9 00  
      69FA 00  
      69FB 00  
      69FC 00  
-     69FD 00  
+0074 69FD 3F  GUDG168	BYTE >3F,>00,>00,>00,>00,>00,>00,>00 ; Character 168
      69FE 00  
-0075 69FF E0  GUDG169	BYTE >E0,>00,>00,>00,>00,>00,>00,>00 ; Character 169
+     69FF 00  
      6A00 00  
      6A01 00  
      6A02 00  
      6A03 00  
      6A04 00  
-     6A05 00  
+0075 6A05 E0  GUDG169	BYTE >E0,>00,>00,>00,>00,>00,>00,>00 ; Character 169
      6A06 00  
-0076 6A07 3E  GUDG170	BYTE >3E,>60,>60,>60,>60,>60,>32,>1E ; Character 170
-     6A08 60  
-     6A09 60  
-     6A0A 60  
-     6A0B 60  
-     6A0C 60  
-     6A0D 32  
-     6A0E 1E  
-0077 6A0F 3E  GUDG171	BYTE >3E,>66,>43,>C3,>43,>62,>76,>3C ; Character 171
-     6A10 66  
-     6A11 43  
-     6A12 C3  
-     6A13 43  
-     6A14 62  
-     6A15 76  
-     6A16 3C  
-0078 6A17 63  GUDG172	BYTE >63,>73,>7B,>6F,>6F,>67,>67,>63 ; Character 172
-     6A18 73  
-     6A19 7B  
-     6A1A 6F  
-     6A1B 6F  
-     6A1C 67  
-     6A1D 67  
-     6A1E 63  
-0079 6A1F 7C  GUDG173	BYTE >7C,>60,>60,>7C,>60,>60,>60,>60 ; Character 173
-     6A20 60  
-     6A21 60  
-     6A22 7C  
-     6A23 60  
-     6A24 60  
-     6A25 60  
+     6A07 00  
+     6A08 00  
+     6A09 00  
+     6A0A 00  
+     6A0B 00  
+     6A0C 00  
+0076 6A0D 3E  GUDG170	BYTE >3E,>60,>60,>60,>60,>60,>32,>1E ; Character 170
+     6A0E 60  
+     6A0F 60  
+     6A10 60  
+     6A11 60  
+     6A12 60  
+     6A13 32  
+     6A14 1E  
+0077 6A15 3E  GUDG171	BYTE >3E,>66,>43,>C3,>43,>62,>76,>3C ; Character 171
+     6A16 66  
+     6A17 43  
+     6A18 C3  
+     6A19 43  
+     6A1A 62  
+     6A1B 76  
+     6A1C 3C  
+0078 6A1D 63  GUDG172	BYTE >63,>73,>7B,>6F,>6F,>67,>67,>63 ; Character 172
+     6A1E 73  
+     6A1F 7B  
+     6A20 6F  
+     6A21 6F  
+     6A22 67  
+     6A23 67  
+     6A24 63  
+0079 6A25 7C  GUDG173	BYTE >7C,>60,>60,>7C,>60,>60,>60,>60 ; Character 173
      6A26 60  
-0080 6A27 C7  GUDG174	BYTE >C7,>CC,>CC,>CC,>CC,>CC,>CE,>C7 ; Character 174
-     6A28 CC  
-     6A29 CC  
-     6A2A CC  
-     6A2B CC  
-     6A2C CC  
-     6A2D CE  
-     6A2E C7  
-0081 6A2F C0  GUDG175	BYTE >C0,>00,>00,>C0,>E0,>60,>E0,>C0 ; Character 175
-     6A30 00  
-     6A31 00  
-     6A32 C0  
-     6A33 E0  
-     6A34 60  
-     6A35 E0  
-     6A36 C0  
-0082 6A37 61  GLINE0_25 BYTE >61,>62,>63,>64,>65,>66,>67,>68,>68,>69,>6A,>6B,>68,>6C,>6D,>6E,>6F,>70,>71,>72,>68,>73,>74,>75
-     6A38 62  
-     6A39 63  
-     6A3A 64  
-     6A3B 65  
-     6A3C 66  
-     6A3D 67  
-     6A3E 68  
-     6A3F 68  
-     6A40 69  
-     6A41 6A  
-     6A42 6B  
-     6A43 68  
-     6A44 6C  
-     6A45 6D  
-     6A46 6E  
-     6A47 6F  
-     6A48 70  
-     6A49 71  
-     6A4A 72  
-     6A4B 68  
-     6A4C 73  
-     6A4D 74  
-     6A4E 75  
-0083 6A4F 76  GLINE1_25 BYTE >76,>77,>78,>79,>7A,>7B,>78,>7C,>7D,>7E,>7F,>80,>81,>82,>83,>84,>85,>86
-     6A50 77  
-     6A51 78  
-     6A52 79  
-     6A53 7A  
-     6A54 7B  
-     6A55 78  
-     6A56 7C  
-     6A57 7D  
-     6A58 7E  
-     6A59 7F  
-     6A5A 80  
-     6A5B 81  
-     6A5C 82  
-     6A5D 83  
-     6A5E 84  
-     6A5F 85  
-     6A60 86  
-0084 6A61 87  GLINE2_24 BYTE >87,>88,>78,>89,>8A,>8B,>78,>8C,>8D,>8E,>8F,>90,>8B,>91,>92,>93,>94
-     6A62 88  
-     6A63 78  
-     6A64 89  
-     6A65 8A  
-     6A66 8B  
-     6A67 78  
-     6A68 8C  
-     6A69 8D  
-     6A6A 8E  
-     6A6B 8F  
-     6A6C 90  
-     6A6D 8B  
-     6A6E 91  
-     6A6F 92  
-     6A70 93  
-     6A71 94  
-0085 6A72 95  GLINE3_25 BYTE >95,>96,>97,>98,>99,>9A,>97,>9B,>9C,>9D,>9E,>9F,>A0,>A1,>A2,>A3,>A4,>A5
-     6A73 96  
-     6A74 97  
-     6A75 98  
-     6A76 99  
-     6A77 9A  
-     6A78 97  
-     6A79 9B  
-     6A7A 9C  
-     6A7B 9D  
-     6A7C 9E  
-     6A7D 9F  
-     6A7E A0  
-     6A7F A1  
-     6A80 A2  
-     6A81 A3  
-     6A82 A4  
-     6A83 A5  
-0086 6A84 A6  GLINE4_9 BYTE >A6,>A7
-     6A85 A7  
-0087 6A86 A8  GLINE4_28 BYTE >A8,>A9,>AA,>AB,>AC,>AD,>AE,>AF
-     6A87 A9  
-     6A88 AA  
-     6A89 AB  
-     6A8A AC  
-     6A8B AD  
-     6A8C AE  
-     6A8D AF  
+     6A27 60  
+     6A28 7C  
+     6A29 60  
+     6A2A 60  
+     6A2B 60  
+     6A2C 60  
+0080 6A2D C7  GUDG174	BYTE >C7,>CC,>CC,>CC,>CC,>CC,>CE,>C7 ; Character 174
+     6A2E CC  
+     6A2F CC  
+     6A30 CC  
+     6A31 CC  
+     6A32 CC  
+     6A33 CE  
+     6A34 C7  
+0081 6A35 C0  GUDG175	BYTE >C0,>00,>00,>C0,>E0,>60,>E0,>C0 ; Character 175
+     6A36 00  
+     6A37 00  
+     6A38 C0  
+     6A39 E0  
+     6A3A 60  
+     6A3B E0  
+     6A3C C0  
+0082 6A3D 61  GLINE0_25 BYTE >61,>62,>63,>64,>65,>66,>67,>68,>68,>69,>6A,>6B,>68,>6C,>6D,>6E,>6F,>70,>71,>72,>68,>73,>74,>75
+     6A3E 62  
+     6A3F 63  
+     6A40 64  
+     6A41 65  
+     6A42 66  
+     6A43 67  
+     6A44 68  
+     6A45 68  
+     6A46 69  
+     6A47 6A  
+     6A48 6B  
+     6A49 68  
+     6A4A 6C  
+     6A4B 6D  
+     6A4C 6E  
+     6A4D 6F  
+     6A4E 70  
+     6A4F 71  
+     6A50 72  
+     6A51 68  
+     6A52 73  
+     6A53 74  
+     6A54 75  
+0083 6A55 76  GLINE1_25 BYTE >76,>77,>78,>79,>7A,>7B,>78,>7C,>7D,>7E,>7F,>80,>81,>82,>83,>84,>85,>86
+     6A56 77  
+     6A57 78  
+     6A58 79  
+     6A59 7A  
+     6A5A 7B  
+     6A5B 78  
+     6A5C 7C  
+     6A5D 7D  
+     6A5E 7E  
+     6A5F 7F  
+     6A60 80  
+     6A61 81  
+     6A62 82  
+     6A63 83  
+     6A64 84  
+     6A65 85  
+     6A66 86  
+0084 6A67 87  GLINE2_24 BYTE >87,>88,>78,>89,>8A,>8B,>78,>8C,>8D,>8E,>8F,>90,>8B,>91,>92,>93,>94
+     6A68 88  
+     6A69 78  
+     6A6A 89  
+     6A6B 8A  
+     6A6C 8B  
+     6A6D 78  
+     6A6E 8C  
+     6A6F 8D  
+     6A70 8E  
+     6A71 8F  
+     6A72 90  
+     6A73 8B  
+     6A74 91  
+     6A75 92  
+     6A76 93  
+     6A77 94  
+0085 6A78 95  GLINE3_25 BYTE >95,>96,>97,>98,>99,>9A,>97,>9B,>9C,>9D,>9E,>9F,>A0,>A1,>A2,>A3,>A4,>A5
+     6A79 96  
+     6A7A 97  
+     6A7B 98  
+     6A7C 99  
+     6A7D 9A  
+     6A7E 97  
+     6A7F 9B  
+     6A80 9C  
+     6A81 9D  
+     6A82 9E  
+     6A83 9F  
+     6A84 A0  
+     6A85 A1  
+     6A86 A2  
+     6A87 A3  
+     6A88 A4  
+     6A89 A5  
+0086 6A8A A6  GLINE4_9 BYTE >A6,>A7
+     6A8B A7  
+0087 6A8C A8  GLINE4_28 BYTE >A8,>A9,>AA,>AB,>AC,>AD,>AE,>AF
+     6A8D A9  
+     6A8E AA  
+     6A8F AB  
+     6A90 AC  
+     6A91 AD  
+     6A92 AE  
+     6A93 AF  
 0088          
 0089          G_SCR1
-0090 6A8E 31      MOVE >0280,G@GUDG96,V@>0B00 ; Copy our screen chars
-     6A8F 02  
-     6A90 80
-     6A91 AB  
-     6A92 00
-     6A93 67  
-     6A94 B7
+0090 6A94 31      MOVE >0280,G@GUDG96,V@>0B00 ; Copy our screen chars
+     6A95 02  
+     6A96 80
+     6A97 AB  
+     6A98 00
+     6A99 67  
+     6A9A BD
 0091          
-0092 6A95 31  	MOVE >0018,G@GLINE0_25,V@>0001
-     6A96 00  
-     6A97 18
-     6A98 A0  
-     6A99 01
-     6A9A 6A  
-     6A9B 37
-0093 6A9C 31  	MOVE >0012,G@GLINE1_25,V@>0027
-     6A9D 00  
-     6A9E 12
-     6A9F A0  
-     6AA0 27
-     6AA1 6A  
-     6AA2 4F
-0094 6AA3 31  	MOVE >0011,G@GLINE2_24,V@>0047
-     6AA4 00  
-     6AA5 11
-     6AA6 A0  
-     6AA7 47
-     6AA8 6A  
-     6AA9 61
-0095 6AAA 31  	MOVE >0012,G@GLINE3_25,V@>0067
-     6AAB 00  
-     6AAC 12
-     6AAD A0  
-     6AAE 67
-     6AAF 6A  
-     6AB0 72
-0096 6AB1 31  	MOVE >0002,G@GLINE4_9,V@>0087
-     6AB2 00  
-     6AB3 02
-     6AB4 A0  
-     6AB5 87
-     6AB6 6A  
-     6AB7 84
-0097 6AB8 31  	MOVE >0008,G@GLINE4_28,V@>0094
-     6AB9 00  
-     6ABA 08
-     6ABB A0  
-     6ABC 94
-     6ABD 6A  
-     6ABE 86
+0092 6A9B 31  	MOVE >0018,G@GLINE0_25,V@>0001
+     6A9C 00  
+     6A9D 18
+     6A9E A0  
+     6A9F 01
+     6AA0 6A  
+     6AA1 3D
+0093 6AA2 31  	MOVE >0012,G@GLINE1_25,V@>0027
+     6AA3 00  
+     6AA4 12
+     6AA5 A0  
+     6AA6 27
+     6AA7 6A  
+     6AA8 55
+0094 6AA9 31  	MOVE >0011,G@GLINE2_24,V@>0047
+     6AAA 00  
+     6AAB 11
+     6AAC A0  
+     6AAD 47
+     6AAE 6A  
+     6AAF 67
+0095 6AB0 31  	MOVE >0012,G@GLINE3_25,V@>0067
+     6AB1 00  
+     6AB2 12
+     6AB3 A0  
+     6AB4 67
+     6AB5 6A  
+     6AB6 78
+0096 6AB7 31  	MOVE >0002,G@GLINE4_9,V@>0087
+     6AB8 00  
+     6AB9 02
+     6ABA A0  
+     6ABB 87
+     6ABC 6A  
+     6ABD 8A
+0097 6ABE 31  	MOVE >0008,G@GLINE4_28,V@>0094
+     6ABF 00  
+     6AC0 08
+     6AC1 A0  
+     6AC2 94
+     6AC3 6A  
+     6AC4 8C
 0098          
-0099 6ABF 00      RTN
+0099 6AC5 00      RTN
 0100          
