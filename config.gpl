@@ -18,6 +18,8 @@ LAYOUTBAN EQU 8        Row for selected bank display
 VEROFS    EQU 32*LAYOUTVER
 VALIDIND  EQU VEROFS-29         ; Indicator for valid command
 VRAMDUMPAREA EQU VEROFS+224+32
+LAYOUTPAG EQU 7
+PAGOFS    EQU 32*LAYOUTPAG
 
 * A few variables for the grommy2 config to use.
 * I am not sure if these are free to use, but I will try :) 
@@ -25,6 +27,11 @@ XREG    EQU >832C   ; ** Program text or token pointer (in BASIC?)
 YREG    EQU >832E   ; ** Pointer to line number tale (in BASIC)
 ZREG    EQU >8330   ; ** Start of line number table pointer (in BASIC)
 ; >8332 .. 8337 seem to contain pointers also used by BASIC not GPL
+BMODE   EQU >8332
+PAGE0   EQU >8333
+PAGE1   EQU >8334
+PAGE2   EQU >8335
+
 
 * Grommy2 command buffer in scratchpad
 GCMDBYTE EQU >8340
@@ -130,14 +137,20 @@ CHOFS2 EQU >800+(8*(HEXBASECH+10))
     MOVE >80,V@>F00,V@>F80
     ST   >5A,V@>39E    
     ST   >5A,V@>39F
+* Move machine code to scratchpad
+    MOVE BINLEN,G@BINDATA,@>8300 ; Move assembly code in place
 
 SCREEN1:
+* Clear the screen (bottom part)
+    ST   ' ',V@PAGOFS
+    MOVE 768-PAGOFS-1,V@PAGOFS,V@PAGOFS+1   ; Clear screen bottom
 * Use the FMT token to add some strings on the screen    
     FMT
     COL LALIGN
     ROW LAYOUTVER
-    HTEX 'VERSION 0.0.00 BANK 0 SHADOW 0'
-    ROW+ >01
+    HTEX 'VER 0.0.00 BANK 0 SHADOW 0    '
+    COL LALIGN
+    HTEX '           MODE 0 PG 01 02 03 '
     COL LALIGN
     HTEX 'SELECT GROM BANK FOR READS'
     ROW+ >01
@@ -179,7 +192,7 @@ SCREEN1:
 
     ROW+ >02
     COL LALIGN
-    HTEX 'M MORE...  P PAGING...'
+    HTEX 'M MAIN.. U DUMP.. P PAGING..'
 
     FEND
 
@@ -228,8 +241,8 @@ MGOTKEY:
     BR    MKEY9
 
 CHECK_ABC 
-; Commands A,B, C,D,E,M,P
-    CEQ   'M',@SCANKEY
+; Commands A,B, C,D,E,U,P
+    CEQ   'U',@SCANKEY
     BS    DUMPSCREEN
     CEQ   'P',@SCANKEY
     BS    PAGINGSCREEN
@@ -310,11 +323,11 @@ GUPDATE
 * Status of Shadow RAM enable/disable
     ST  '0',@PAD0
     ADD @SHADOW,@PAD0
-    ST  @PAD0,V@VEROFS+>1F        Write to VRAM
+    ST  @PAD0,V@VEROFS+>1B        Write to VRAM
 * Status of selected bank
     ST  '0',@PAD0
     ADD @BANK,@PAD0
-    ST  @PAD0,V@VEROFS+>16  ; Write to VRAM
+    ST  @PAD0,V@VEROFS+>12  ; Write to VRAM
 
 
 * Start update GROM read bank. First erase bank markings.
@@ -336,11 +349,11 @@ BANKOFS EQU (32*LAYOUTBAN)+4
 *----------------------------------------
 DUMPSCREEN:
     ST   ' ',V@VEROFS
-    MOVE 768-VEROFS-1,V@VEROFS,V@VEROFS+1   ; Clear screen bottom
+    MOVE 768-VEROFS-1-32,V@VEROFS,V@VEROFS+1   ; Clear screen bottom
     FMT
     COL LALIGN
     ROW LAYOUTVER
-    HTEX '1 DEC 2 INC DUMP ADDR 3 RET'
+    HTEX '1 DEC 2 INC DUMP ADDR'
     ROW+ >01
     COL LALIGN
     HTEX '4 FILL GRAM WITH FF'
@@ -411,6 +424,10 @@ KW1:
     INC   V@PATADR
     B     KW1
 DGOTKEY:
+    CEQ   'M',@SCANKEY
+    BS    SCREEN1           ; Back to main screen
+    CEQ   'P',@SCANKEY
+    BS    PAGINGSCREEN
     ST    @SCANKEY,V@VEROFS-30  ; Make key visible.
     CGT   'X'-1,@SCANKEY    ; Key >= 'X'
     BS    XYZ               ; Yes: go to XYZ
@@ -423,7 +440,7 @@ DGOTKEY:
     BR    DKEY0
     BR    DKEY1
     BR    DKEY2
-    BR    DKEY3
+    BR    DUMPSCREEN    ; Key 3
     BR    DKEY4 
     BR    DKEY5
     BR    DKEY6
@@ -474,7 +491,7 @@ XYZ:
     SUB   'X',@PAD3       ; Now pad is 0,1,2 for X,Y,Z
     SLL   1,@PAD3         ; Multiply by 2
     CLR   @PAD2           ; clear high byte
-    DADD  XREG,@PAD2       ; Add address of XREG, now PAD1:PAD2 is a pointer to value
+    DADD  XREG,@PAD2       ; Add address of XREG, now PAD2:PAD3 is a pointer to value
 
     ST    @0(@PAD2),@PAD0  ; Hi byte of reg
     .DOHEXOUT
@@ -699,15 +716,46 @@ TWINHEXBC EQU   (HEXBASECH * 256) + HEXBASECH
 * Screen used to select paging features
 *----------------------------------------
 PAGINGSCREEN:
-    ST   ' ',V@VEROFS
-    MOVE 768-VEROFS-1,V@VEROFS,V@VEROFS+1   ; Clear screen bottom
+    ST   ' ',V@PAGOFS
+    MOVE 768-PAGOFS-1-32,V@PAGOFS,V@PAGOFS+1   ; Clear screen bottom
     FMT
     COL LALIGN
     ROW LAYOUTVER
-    HTEX '1 DEC 2 INC DUMP ADDR 3 RET'
+    HTEX 'VER 0.0.00 BANK 0 SHADOW 0    '
+    COL LALIGN
+    HTEX '           MODE 0 PG 01 02 03 '
+    COL LALIGN
+    ROW LAYOUTBAN
+    HTEX 'SELECT BANKING MODE'
     ROW+ >01
     COL LALIGN
+    HTEX '0 STANDARD BANKING'
+    ROW+ >01
+    COL LALIGN
+    HTEX '1 GROMMY2 BANKING'
+    ROW+ >01
+    COL LALIGN
+    HTEX '2 GROMMY2 8K PAGING'
+    ROW+ >01
+    COL LALIGN
+    HTEX '3 FAILSAFE'
+    ROW+ >02
+    COL LALIGN
+    HTEX '4 EDIT PAGE #0'
+    ROW+ >01
+    COL LALIGN
+    HTEX '5 EDIT PAGE #1'
+    ROW+ >01
+    COL LALIGN
+    HTEX '6 EDIT PAGE #2'
+
+    ROW+ >02
+    COL LALIGN
+    HTEX '7 RETURN TO MAIN'
+
     FEND
+PAGINGLOOP:
+    CALL G@SHOW_VERSION
 
 PKEYWAIT:    
     SCAN
@@ -715,7 +763,56 @@ PKEYWAIT:
     INC   V@PATADR
     B     PKEYWAIT
 PGOTKEY:
-    B     SCREEN1
+    CEQ   'M',@SCANKEY
+    BS    SCREEN1           ; Back to main screen
+    CEQ   'U',@SCANKEY
+    BS    DUMPSCREEN
+
+    ST    @SCANKEY,V@VEROFS-30  ; Make key visible.
+    CGT   '0'-1,@SCANKEY        ; greater than >= '0' ?
+    BR    PKEYWAIT              ; no: get another
+    CGT   '7',@SCANKEY          ; Key greater than '7'?
+    BS    PKEYWAIT              ; Yes: get another key
+    SUB   '0',@SCANKEY
+    CASE  @SCANKEY
+    BR    PKEY0
+    BR    PKEY1
+    BR    PKEY2
+    BR    PKEY3
+    BR    PKEY4
+    BR    PKEY5
+    BR    PKEY6
+    BR    SCREEN1       ; 7 return
+
+PKEY0       ; Switch to banking mode
+PKEY1
+PKEY2
+PKEY3
+    ST  9,@GCMDBYTE         ; Command 9 set banking mode
+    ST   @SCANKEY,@GCMDP2    ; Set parameter 2
+    MOVE  8,G@GROMMY_DAT+8,@GCMDBYTE+8  ; Unlock string
+    ST    '*',V@VALIDIND    ; Command valid indicator
+    CALL  GSENDCMD          ; Send command to HW
+    B    PAGINGLOOP
+
+PKEY4   ; Edit digits for PAGE0
+    DST   VEROFS+>37,@VRAMP ; Digits displayed here
+    DST   PAGE0,@PAD2       ; Value to edit is pointed to by PAD2:PAD3
+    ST    2,@PAD4           ; 4 digits to edit, VRAMP points to them
+PEDITBK:
+    CALL  EDITHEX           ; go and edit them
+    B     PKEYWAIT
+PKEY5:
+    DST   VEROFS+>3A,@VRAMP ; Digits displayed here
+    DST   PAGE1,@PAD2       ; Value to edit is pointed to by PAD2:PAD3
+    B     PEDITBK
+
+PKEY6:
+    DST   VEROFS+>3D,@VRAMP ; Digits displayed here
+    DST   PAGE2,@PAD2       ; Value to edit is pointed to by PAD2:PAD3
+    B     PEDITBK
+
+
 
 
 
@@ -741,30 +838,48 @@ VER_OK:     ; grommy responded, read data
     MOVE 3,G@HWIF+8,@PAD2
 * Get active bank from grommy2
     MOVE 1,G@HWIF+3,@BANK
-    AND  >0F,@BANK
+    ST   @BANK,@BMODE       ; Copy to banking mode
+    SRL  4,@BMODE           ; High nibble to banking mode
+    AND  >0F,@BANK          ; Low nibble is bank number
     CEQ  8,@BANK            ; Is GRAM bank 8 selected?
     BR   NOGRAM1            ; No, we're good
-    ST   3,@BANK            ; yes, convert to 3 here
+    ST   4,@BANK            ; yes, convert to 3 here
 NOGRAM1:    
 * Get RAM shadow from grommy2
     MOVE 1,G@HWIF+4,@SHADOW
+* Get page numbers from grommy2
+    MOVE 3,G@HWIF+5,@PAGE0
 VER1:
 * Show major version in p2
     ST  '0',@PAD0
     ADD @PAD2,@PAD0
-    ST  @PAD0,V@VEROFS+>A        Write to VRAM
+    ST  @PAD0,V@VEROFS+>6        Write to VRAM
 * Show minor version in p3
     ST  '0',@PAD0
     ADD @PAD3,@PAD0
-    ST  @PAD0,V@VEROFS+>C        Write to VRAM
+    ST  @PAD0,V@VEROFS+>8        Write to VRAM
 * Show build version in p4. The build is two digits from 0 to 99
     CLR  @PAD0              Zero fill as the value to divide is 16 bits§
     ST   @PAD4,@PAD1      
     DIV  10,@PAD0           Quotiotent in PAD0, remainder PAD1
     ADD  '0',@PAD0
-    ST   @PAD0,V@VEROFS+>E      Write to VRAM
+    ST   @PAD0,V@VEROFS+>A      Write to VRAM
     ADD  '0',@PAD1          Remainder
-    ST   @PAD1,V@VEROFS+>F      Write to VRAM
+    ST   @PAD1,V@VEROFS+>B      Write to VRAM
+* Show Banking mode
+    ST   '0',@PAD0
+    ADD  @BMODE,@PAD0
+    ST   @pAD0,V@VEROFS+>32 ; Show banking mode
+* Show page numbers
+    ST    ' ',V@VEROFS+>37-1    ; setup VRAM address in case assembly used
+    ST    @PAGE0,@PAD0      ; Hi byte off address
+    .DOHEXOUT
+    ST    ' ',V@VEROFS+>3A-1    ; setup VRAM address in case assembly used
+    ST    @PAGE1,@PAD0      ; Hi byte off address
+    .DOHEXOUT
+    ST    ' ',V@VEROFS+>3D-1    ; setup VRAM address in case assembly used
+    ST    @PAGE2,@PAD0      ; Hi byte off address
+    .DOHEXOUT
     RTN
 
 
