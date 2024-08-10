@@ -1,0 +1,23 @@
+* bin2gpl.py output to bin2hex.gpl
+* Sun Jul 28 10:43:06 2024
+* Binary data
+BINDATA:
+  DATA >8302
+  DATA >d060
+  DATA >835c
+  DATA >0941
+  DATA >0221
+  DATA >e000
+  DATA >dbc1
+  DATA >fffe
+  DATA >d060
+  DATA >835c
+  DATA >0241
+  DATA >0f00
+  DATA >0221
+  DATA >e000
+  DATA >dbc1
+  DATA >fffe
+  DATA >045b
+BINLEN EQU >22   ; 34
+
