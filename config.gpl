@@ -433,7 +433,7 @@ DGOTKEY:
     BS    XYZ               ; Yes: go to XYZ
     CGT   '0'-1,@SCANKEY
     BR    KW1               ; Key less than zero -> loop
-    CGT   '7',@SCANKEY      ; Key over '7' -> loop
+    CGT   '9',@SCANKEY      ; Key over '7' -> loop
     BS    KW1
     SUB   '0',@SCANKEY
     CASE  @SCANKEY          
@@ -445,6 +445,8 @@ DGOTKEY:
     BR    DKEY5
     BR    DKEY6
     BR    DKEY7
+    BR    DKEY8         ; Undocumented, burn failsafe memory
+    BR    DKEY9         ; Undocumented, burn 2K page
 
 DODUMP:
     DST   VRAMDUMPAREA,@VRAMP
@@ -586,6 +588,32 @@ DKEY7:
     DST   >0140,@GCMDBYTE+2  ; ARM has different byte order
     BR    DKEY6ASK
 
+DKEY8:      ; Undocumented, burn filesafe bank from bottom of GRAM
+    CALL  G@ASKCONFIRM
+    CEQ   '1',@SCANKEY       is the key one?
+    BR    G@DUMPSCREEN       no: DUMPSCREEN
+    ST    '*',V@VALIDIND    ; Command valid indicator   
+    ST    8,@GCMDBYTE
+    DCLR  @GCMDBYTE+2
+    DCLR  @GCMDBYTE+4
+    DCLR  @GCMDBYTE+6
+    CALL  ISSUECMD
+    BR    MAKEDUMP
+
+DKEY9:      ; Undocumented, burn any 2K page
+    CALL  G@ASKCONFIRM
+    CEQ   '1',@SCANKEY       is the key one?
+    BR    G@DUMPSCREEN       no: DUMPSCREEN
+    ST    '*',V@VALIDIND    ; Command valid indicator   
+    ST    12,@GCMDBYTE
+    ST    @XREG+1,@GCMDP2   ; source page number
+    ST    @YREG+1,@GCMDP3   ; dest page number
+    ST    @ZREG+1,@GCMDP4   ; number of pages
+    DCLR  @GCMDBYTE+6
+    CALL  ISSUECMD
+    BR    MAKEDUMP
+
+
 *----------------------------------------
 CLEARVALID:
     ST    ' ',V@VALIDIND
@@ -629,7 +657,7 @@ GOTDIGIT:
     ST    @SCANKEY,V@0(@VRAMP)  ; Store digit into VRAM.
     DINC  @VRAMP
     INC   @INDEX
-    CEQ   @INDEX,@PAD4          ; Index=number of digitss?
+    CEQ   @INDEX,@PAD4          ; Index=number of digits?
     BR    EWAIT                 ; No: get back to waiting next key
     CALL  BACK2BEGIN
     B     EWAIT                 ; Wait for next keypress
@@ -749,10 +777,6 @@ PAGINGSCREEN:
     COL LALIGN
     HTEX '6 EDIT PAGE #2'
 
-    ROW+ >02
-    COL LALIGN
-    HTEX '7 RETURN TO MAIN'
-
     FEND
 PAGINGLOOP:
     CALL G@SHOW_VERSION
@@ -771,7 +795,7 @@ PGOTKEY:
     ST    @SCANKEY,V@VEROFS-30  ; Make key visible.
     CGT   '0'-1,@SCANKEY        ; greater than >= '0' ?
     BR    PKEYWAIT              ; no: get another
-    CGT   '7',@SCANKEY          ; Key greater than '7'?
+    CGT   '6',@SCANKEY          ; Key greater than '6'?
     BS    PKEYWAIT              ; Yes: get another key
     SUB   '0',@SCANKEY
     CASE  @SCANKEY
@@ -782,25 +806,31 @@ PGOTKEY:
     BR    PKEY4
     BR    PKEY5
     BR    PKEY6
-    BR    SCREEN1       ; 7 return
 
 PKEY0       ; Switch to banking mode
 PKEY1
 PKEY2
 PKEY3
-    ST  9,@GCMDBYTE         ; Command 9 set banking mode
-    ST   @SCANKEY,@GCMDP2    ; Set parameter 2
+    ST    9,@GCMDBYTE         ; Command 9 set banking mode
+    ST    @SCANKEY,@GCMDP2    ; Set parameter 2
     MOVE  8,G@GROMMY_DAT+8,@GCMDBYTE+8  ; Unlock string
     ST    '*',V@VALIDIND    ; Command valid indicator
     CALL  GSENDCMD          ; Send command to HW
-    B    PAGINGLOOP
+    B     PAGINGLOOP
 
 PKEY4   ; Edit digits for PAGE0
     DST   VEROFS+>37,@VRAMP ; Digits displayed here
     DST   PAGE0,@PAD2       ; Value to edit is pointed to by PAD2:PAD3
-    ST    2,@PAD4           ; 4 digits to edit, VRAMP points to them
 PEDITBK:
+    ST    2,@PAD4           ; 2 digits to edit, VRAMP points to them
     CALL  EDITHEX           ; go and edit them
+    ST    11,@GCMDBYTE      ; Setup all three pages
+    ST    @PAGE0,@GCMDP2
+    ST    @PAGE1,@GCMDP3
+    ST    @PAGE2,@GCMDP4
+    MOVE  8,G@GROMMY_DAT+8,@GCMDBYTE+8  ; Unlock string
+    ST    '*',V@VALIDIND    ; Command valid indicator
+    CALL  GSENDCMD          ; Send command to HW
     B     PKEYWAIT
 PKEY5:
     DST   VEROFS+>3A,@VRAMP ; Digits displayed here
