@@ -757,16 +757,16 @@ PAGINGSCREEN:
     HTEX 'SELECT BANKING MODE'
     ROW+ >01
     COL LALIGN
-    HTEX '0 STANDARD BANKING'
+    HTEX ' 0 STANDARD BANKING'
     ROW+ >01
     COL LALIGN
-    HTEX '1 GROMMY2 BANKING'
+    HTEX ' 1 GROMMY2 BANKING'
     ROW+ >01
     COL LALIGN
-    HTEX '2 GROMMY2 8K PAGING'
+    HTEX ' 2 GROMMY2 8K PAGING'
     ROW+ >01
     COL LALIGN
-    HTEX '3 FAILSAFE'
+    HTEX ' 3 FAILSAFE'
     ROW+ >02
     COL LALIGN
     HTEX '4 EDIT PAGE #0'
@@ -780,6 +780,18 @@ PAGINGSCREEN:
     FEND
 PAGINGLOOP:
     CALL G@SHOW_VERSION
+* Show active banking mode. First erase bank markings.
+BAMODEOFS EQU (32*(LAYOUTBAN+1))+4
+    ST ' ',V@BAMODEOFS
+    ST ' ',V@BAMODEOFS+>20
+    ST ' ',V@BAMODEOFS+>40
+    ST ' ',V@BAMODEOFS+>60
+    DCLR @PAD0
+    CLR  @PAD2              ; Clear high byte
+    ST   @BMODE,@PAD3       ; Copy to low byte the bank mode
+    DSLL 5,@PAD2            ; Shift by 5 to get 32 chars per line
+    ST  '*',V@BAMODEOFS(@PAD2)   Screen offset 102
+* Done
 
 PKEYWAIT:    
     SCAN
