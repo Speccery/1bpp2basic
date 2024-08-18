@@ -1,5 +1,27 @@
 # 1bpp2basic
 ## Version history
+
+## 2024-08-18 added command line parameters
+Now the source and destination filenames can be given with the mandatory --src and --dest tags.
+```
+python3 1bpp2basic.py --src grommy2-update-edited-mogrify.bmp --dest update.bas
+```
+The conversion is a bit tedious, so I wrote a shell script which uses imagemagick to convert the picture. This script uses the **xdt99** suite to add the resulting basic program to a disk image which can be easily loaded with js99er.net. Below the file names are quite tedious, but it all starts with the "grommy2-update-edited.png" file and ends with the update.bas BASIC program.
+```
+convert  -monochrome grommy2-update-edited.png grommy2-update-edited.bmp
+cp grommy2-update-edited.bmp grommy2-update-edited-mogrify.bmp
+mogrify -compress none -format bmp -define bmp:BMP3 grommy2-update-edited-mogrify.bmp
+rm update.bas
+python3 1bpp2basic.py --src grommy2-update-edited-mogrify.bmp --dest update.bas
+xbas99.py update.bas
+# delete old version
+xdm99.py diska.dsk -d update.prg
+# add new version
+echo adding UPDATE.prg
+xdm99.py diska.dsk -a UPDATE.prg
+```
+
+
 ### 2023-11-26 Now also generates GPL
 The code also creates `screen.gpl` file. I also wrote a quick GPL code `config.gpl` which includes the generated screen.gpl file and renders it on screen - this is code is based partially to the GPL code in the Mini Memory module.
 Compile with xdt99 toolchain like this:

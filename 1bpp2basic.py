@@ -13,13 +13,14 @@
 # Started 2023-11-22 EP
 #
 
+import argparse
+
 ### config start ###
-source_bmp = "grommy2-1bpp-named.bmp"
 offset_to_bits = 0x92   # hardcoded, not good...
-first_char = 96
+first_char = 95
 width = 256
 height = 192
-basic_filename="SCREEN.BAS"
+chr_offset = 50 # 96 - 50
 ### config end ###
 
 cells = (width*height) >> (3+3)
@@ -28,36 +29,41 @@ charmap = [first_char] * cells
 charmap_count = [0] * cells
 current_char = first_char
 
+data = []
+
 # Load the source picture as a binary blob
-pict_file = open(source_bmp, "rb")
-data = pict_file.read()
-pict_file.close()
+def load_picture(source_bmp):
+    global data
+    pict_file = open(source_bmp, "rb")
+    data = pict_file.read()
+    pict_file.close()
 
-# print(len(data))
-# print(data[0])
+    # print(len(data))
+    # print(data[0])
 
-# some silly validation
-if data[0] != ord('B') or data[1] != ord('M'):
-    print("Error bitmap format not good.")
-    exit(2)
+    # some silly validation
+    if data[0] != ord('B') or data[1] != ord('M'):
+        print("Error bitmap format not good.")
+        exit(2)
 
-print(f"File was read, size {len(data)}.")
-if len(data) != offset_to_bits + width*height/8:
-    print("image size not matching expecation")
-    exit(2)
+    print(f"File was read, size {len(data)}.")
+    if len(data) != offset_to_bits + width*height/8:
+        print("image size not matching expection")
+        exit(2)
 
-if int(height) & 7 != 0:
-    print(f"height {height} not multiple of 8")
-    exit(2)
+    if int(height) & 7 != 0:
+        print(f"height {height} not multiple of 8")
+        exit(2)
 
-if int(width) & 7 != 0:
-    print(f"width {width} not multiple of 8")
-    exit(2)
+    if int(width) & 7 != 0:
+        print(f"width {width} not multiple of 8")
+        exit(2)
 
 
 # In the BMP format the picture is upside down.
 # Here x is in bytes not pixels, so each increment of x is 8 pixels.
 def get_pict_byte(x : int, y : int):
+    global data
     o = offset_to_bits + x + (height - 1 - y)*(width >> 3)
     # print(f"x={x} y={y} offset={o}")
     return data[ o ]
@@ -88,29 +94,29 @@ def alloc_char( my_char : [] ):
     current_char += 1
     return current_char-1
     
+def allocate_chars():
+    for y in range(height >> 3):
+        for x in range(width >> 3):
+            # Here we iterate across the character cells and allocate new characters if 
+            # existing data is not matching present character.
+            myc = []
+            for y2 in range(8):
+                myc.append(get_pict_byte(x, y*8+y2))
+                # print(f"{hex(myc[y2])} ", end=" ")
+            # print()
+            charmap[ y*(width >> 3) + x] = alloc_char( myc )
 
-for y in range(height >> 3):
-    for x in range(width >> 3):
-        # Here we iterate across the character cells and allocate new characters if 
-        # existing data is not matching present character.
-        myc = []
-        for y2 in range(8):
-            myc.append(get_pict_byte(x, y*8+y2))
-            # print(f"{hex(myc[y2])} ", end=" ")
-        # print()
-        charmap[ y*(width >> 3) + x] = alloc_char( myc )
-
-print(f"defined {current_char-first_char} characters")
-print("Usage statistics of chars:")
-for i in range(first_char, current_char):
-    print(f"{i},{charmap_count[i-first_char]}", end=" ")
-    if i != current_char-1:
-        if (i-first_char) % 4 == 3:
-            print(", ")
+    print(f"defined {current_char-first_char} characters")
+    print("Usage statistics of chars:")
+    for i in range(first_char, current_char):
+        print(f"{i},{charmap_count[i-first_char]}", end=" ")
+        if i != current_char-1:
+            if (i-first_char) % 4 == 3:
+                print(", ")
+            else:
+                print(",   ", end=" ")
         else:
-            print(",   ", end=" ")
-    else:
-        print()
+            print()
 
 ##########################################
 def flush_string(line_num : int, x : int, y : int, m : str, gosub : int, fout):
@@ -126,7 +132,7 @@ def flush_string(line_num : int, x : int, y : int, m : str, gosub : int, fout):
 
 
 # Create a basic program defing the screen
-def save_as_basic_program(basic_filename):
+def save_as_basic_program(source_bmp, basic_filename):
     fout = open(basic_filename, "wt")
     line_num = 1000
     print(f"{line_num} REM CREATED FROM {source_bmp}", file=fout)
@@ -147,7 +153,7 @@ def save_as_basic_program(basic_filename):
     # Subroutine to convert from printable characters to el weirdo
     sub = line_num+20
     print(f"{line_num+20} FOR I=1 TO LEN(A$)", file=fout)
-    print(f"{line_num+30} CALL HCHAR(Y, X+I-1, ASC(SEG$(A$,I,1))+50)", file=fout)
+    print(f"{line_num+30} CALL HCHAR(Y, X+I-1, ASC(SEG$(A$,I,1))+{chr_offset})", file=fout)
     print(f"{line_num+40} NEXT I", file=fout)
     print(f"{line_num+50} RETURN", file=fout)
     line_num += 100
@@ -166,7 +172,7 @@ def save_as_basic_program(basic_filename):
                 continue
             if sx == -1:
                 sx = x # save X coordinate
-            k += chr(charmap[y*w+x]-50)    # add to string
+            k += chr(charmap[y*w+x]-chr_offset)    # add to string
         # end of x loop, flush if we have something in k
         line_num = flush_string(line_num, sx+1, y+1, k, sub, fout)
 
@@ -227,5 +233,13 @@ G_SCR1
     fout.close()
 
 if __name__ == "__main__":
-    save_as_basic_program(basic_filename)
-    save_as_gpl("screen.gpl")
+    parser = argparse.ArgumentParser(description="1bpp2basic - convert 1 bit per pixel 256*192 bitmap to TI Basic code")
+    parser.add_argument('--src', type=str, help="Source bitmap file")
+    parser.add_argument('--dest', type=str, help="Destination basic filename")
+    parser.add_argument('--gpl', type=str, help="Optional GPL filename", default=None)
+    args = parser.parse_args()
+    load_picture(args.src)
+    allocate_chars()
+    save_as_basic_program(args.src, args.dest)
+    if args.gpl != None:
+        save_as_gpl(args.gpl)
